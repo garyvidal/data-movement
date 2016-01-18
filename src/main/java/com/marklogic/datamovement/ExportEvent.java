@@ -15,9 +15,7 @@
  */
 package com.marklogic.datamovement;
 
-import java.io.File;
-
-public interface ImportDocument {
-    public String getUri();
-    public File   getSourceFile();
+public interface ExportEvent extends QueryEvent {
+  public String getTargetUri();
+  public long getTargetRecordNumber();
 }

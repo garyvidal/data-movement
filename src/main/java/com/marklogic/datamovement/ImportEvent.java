@@ -16,8 +16,9 @@
 package com.marklogic.datamovement;
 
 public interface ImportEvent extends DataMovementEvent {
-    public String getSourceUri();
-    public long getSourceRecordNumber();
+  public String getTargetUri();
+  public String getSourceUri();
+  public String getZipEntryName();
+  public long getLineNumber();
+  public long getColumnNumber();
 }
-
-

@@ -16,46 +16,46 @@
 package com.marklogic.datamovement.impl;
 
 public class DataMovementEventImpl {
-    private String targetUri;
-    private long bytesMoved;
-    private long jobRecordNumber;
-    private long batchRecordNumber;
+  private String targetUri;
+  private long bytesMoved;
+  private long jobRecordNumber;
+  private long batchRecordNumber;
 
-    public DataMovementEventImpl() {}
+  public DataMovementEventImpl() {}
 
-    public String getTargetUri() {
-        return targetUri;
-    }
+  public String getTargetUri() {
+    return targetUri;
+  }
 
-    public DataMovementEventImpl withTargetUri(String targetUri) {
-        this.targetUri = targetUri;
-        return this;
-    }
+  public DataMovementEventImpl withTargetUri(String targetUri) {
+    this.targetUri = targetUri;
+    return this;
+  }
 
-    public long getBytesMoved() {
-        return bytesMoved;
-    }
+  public long getBytesMoved() {
+    return bytesMoved;
+  }
 
-    public DataMovementEventImpl withBytesMoved(long bytesMoved) {
-        this.bytesMoved = bytesMoved;
-        return this;
-    }
+  public DataMovementEventImpl withBytesMoved(long bytesMoved) {
+    this.bytesMoved = bytesMoved;
+    return this;
+  }
 
-    public long getJobRecordNumber() {
-        return jobRecordNumber;
-    }
+  public long getJobRecordNumber() {
+    return jobRecordNumber;
+  }
 
-    public DataMovementEventImpl withJobRecordNumber(long jobRecordNumber) {
-        this.jobRecordNumber = jobRecordNumber;
-        return this;
-    }
+  public DataMovementEventImpl withJobRecordNumber(long jobRecordNumber) {
+    this.jobRecordNumber = jobRecordNumber;
+    return this;
+  }
 
-    public long getBatchRecordNumber() {
-        return batchRecordNumber;
-    }
+  public long getBatchRecordNumber() {
+    return batchRecordNumber;
+  }
 
-    public DataMovementEventImpl withBatchRecordNumber(long batchRecordNumber) {
-        this.batchRecordNumber = batchRecordNumber;
-        return this;
-    }
+  public DataMovementEventImpl withBatchRecordNumber(long batchRecordNumber) {
+    this.batchRecordNumber = batchRecordNumber;
+    return this;
+  }
 }

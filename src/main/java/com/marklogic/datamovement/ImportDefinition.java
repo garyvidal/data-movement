@@ -16,12 +16,15 @@
 package com.marklogic.datamovement;
 
 public interface ImportDefinition extends JobDefinition<ImportDefinition> {
-    public ImportDefinition jobName(String jobName);
-    public ImportDefinition maxSplitSize(int splitSize);
-    public ImportDefinition minSplitSize(int splitSize);
-    public ImportDefinition inputFilePath(String path);
-    public ImportDefinition inputFilePattern(String pattern);
-    public ImportDefinition onBatchSuccess(BatchListener<ImportEvent> listener);
-    public ImportDefinition onBatchFailure(BatchListener<ImportEvent> listener);
-    public ImportDefinition onBatchFailure(BatchFailureListener<ImportEvent> listener);
+  public ImportDefinition maxSplitSize(int splitSize);
+  public ImportDefinition minSplitSize(int splitSize);
+  public ImportDefinition inputFilePath(String path);
+  public ImportDefinition inputFilePattern(String pattern);
+  public ImportDefinition transform(DataMovementTransform transform);
+  public ImportDefinition xmlRepairLevel(ImportDefinition.XmlRepairLevel xmlRepairLevel);
+  public ImportDefinition onBatchSuccess(BatchListener<ImportEvent> listener);
+  public ImportDefinition onBatchFailure(BatchListener<ImportEvent> listener);
+  public ImportDefinition onBatchFailure(BatchFailureListener<ImportEvent> listener);
+
+  public enum XmlRepairLevel { DEFAULT, FULL, NONE };
 }

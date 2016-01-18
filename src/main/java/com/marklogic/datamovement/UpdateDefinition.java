@@ -15,6 +15,11 @@
  */
 package com.marklogic.datamovement;
 
-public interface BatchFailure<T> extends Batch<T> {
-    public Exception getException();
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface UpdateDefinition extends JobDefinition<UpdateDefinition> {
+  public UpdateDefinition query(CtsQueryDefinition query);
+  public UpdateDefinition transform(DataMovementTransform transform);
+  public UpdateDefinition onBatchSuccess(BatchListener<UpdateEvent> listener);
+  public UpdateDefinition onBatchFailure(BatchFailureListener<UpdateEvent> listener);
 }

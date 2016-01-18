@@ -15,6 +15,17 @@
  */
 package com.marklogic.datamovement;
 
-public interface ImportSuccessListener {
-    void batchSuccess(ImportDocument[] docs);
+import com.marklogic.client.DatabaseClient;
+
+public interface ForestConfiguration {
+  // update every <interval> milliseconds
+  public ForestConfiguration setUpdateInterval(long interval);
+  public Forest[] listForests();
+  public Forest getForestAssignment(String uri);
+  public DatabaseClient getForestClient(Forest forest);
+  public DatabaseClient getForestClient(String uri);
+  public AssignmentPolicy getAssignmentPolicy();
+  public ForestConfiguration onConfigChange(ForestConfigChangeListener listener);
+
+  public enum AssignmentPolicy { BUCKET, LEGACY, STATISTICAL, RANGE };
 }

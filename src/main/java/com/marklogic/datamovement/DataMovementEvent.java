@@ -16,8 +16,7 @@
 package com.marklogic.datamovement;
 
 public interface DataMovementEvent {
-    public String getTargetUri();
-    public long getBytesMoved();
-    public long getJobRecordNumber();
-    public long getBatchRecordNumber();
+  public long getBytesMoved();
+  public long getJobRecordNumber();
+  public long getBatchRecordNumber();
 }

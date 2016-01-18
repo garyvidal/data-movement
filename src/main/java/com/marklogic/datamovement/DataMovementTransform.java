@@ -15,7 +15,10 @@
  */
 package com.marklogic.datamovement;
 
-public interface UpdateFailure {
-    public String[]  getBatchUris();
-    public Exception getException();
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface DataMovementTransform<T extends DataMovementTransform> { // TODO: add "extends Map<String,List<String>>"
+  public T addParameter(String name, String value);
+  public T addParameter(String name, String... values);
+  public int size();
 }

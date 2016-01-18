@@ -15,11 +15,17 @@
  */
 package com.marklogic.datamovement.impl;
 
+import com.marklogic.datamovement.JobTicket.JobType;
+
 public class JobTicketImpl {
-    private String jobId;
+  private String jobId;
+  private JobType jobType;
 
-    public String getJobId() {
-        return jobId;
-    }
+  public String getJobId() {
+    return jobId;
+  }
+
+  public JobType getJobType() {
+    return jobType;
+  }
 }
-

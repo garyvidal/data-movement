@@ -13,27 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement.impl;
+package com.marklogic.datamovement;
 
-public class CustomEventImpl extends DataMovementEventImpl {
-    public boolean isCreate() {
-        return true;
-    }
-
-    public boolean isWrite() {
-        return true;
-    }
-
-    public boolean isPatch() {
-        return true;
-    }
-
-    public boolean isMetadataWrite() {
-        return true;
-    }
-
-    public boolean isDelete() {
-        return true;
-    }
+public interface CopyEvent extends DataMovementEvent {
+  public String getTargetUri();
+  public String getSourceUri();
+  public Forest getSourceForest();
 }
-

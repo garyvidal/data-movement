@@ -15,6 +15,8 @@
  */
 package com.marklogic.datamovement;
 
-public interface FailureListener<T extends MoveFailure> {
-    void batchFailure(T failure);
+import com.marklogic.client.DatabaseClient;
+
+public interface FailureListener<T extends Throwable> {
+  public void processFailure(DatabaseClient client, T failure);
 }

@@ -18,5 +18,5 @@ package com.marklogic.datamovement;
 import com.marklogic.client.DatabaseClient;
 
 public interface BatchListener<T> {
-    public void processEvent(DatabaseClient client, Batch<T> batch);
+  public void processEvent(DatabaseClient client, Batch<T> batch);
 }

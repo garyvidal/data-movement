@@ -15,6 +15,6 @@
  */
 package com.marklogic.datamovement;
 
-public interface DeleteSuccessListener {
-    void batchSuccess(String[] uris);
+public interface ForestConfigChangeListener {
+  public void compare(ForestConfiguration oldConfig, ForestConfiguration newConfig);
 }

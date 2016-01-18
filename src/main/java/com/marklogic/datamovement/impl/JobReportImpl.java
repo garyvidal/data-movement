@@ -15,67 +15,52 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.DataMovementEvent;
-import com.marklogic.datamovement.Batch;
-
-import com.marklogic.client.Page;
-
 import java.util.Date;
 
-public class JobReportImpl<Y extends DataMovementEvent> {
-    public long getBatchesCount() {
-        // TODO: implement
-        return 0;
-    }
+public class JobReportImpl {
+  public long getSuccessEventsCount() {
+    // TODO: implement
+    return 0;
+  }
 
-    public Page<Batch<Y>> getAllBatches(long start, int pageLength) {
-        // TODO: implement
-        return null;
-    }
+  public long getFailureEventsCount() {
+    // TODO: implement
+    return 0;
+  }
 
-    public long getSuccessBatchesCount() {
-        // TODO: implement
-        return 0;
-    }
+  public long getTotalEventsEstimate() {
+    // TODO: implement
+    return 0;
+  }
 
-    public Page<Batch<Y>> getSuccessBatches(long start, int pageLength) {
-        // TODO: implement
-        return null;
-    }
+  public long getFragmentCount() {
+    // TODO: implement
+    return 0;
+  }
 
-    public long getFailureBatchesCount() {
-        // TODO: implement
-        return 0;
-    }
+  public long getSuccessBatchesCount() {
+    // TODO: implement
+    return 0;
+  }
 
-    public Page<Batch<Y>> getFailureBatches(long start, int pageLength) {
-        // TODO: implement
-        return null;
-    }
+  public long getFailureBatchesCount() {
+    // TODO: implement
+    return 0;
+  }
 
-    public long getEventCount() {
-        // TODO: implement
-        return 0;
-    }
+  public long getBytesMoved() {
+    // TODO: implement
+    return 0;
+  }
 
-    public long getSuccessCount() {
-        // TODO: implement
-        return 0;
-    }
+  public boolean isJobComplete() {
+    // TODO: implement
+    return true;
+  }
 
-    public long getBytesMoved() {
-        // TODO: implement
-        return 0;
-    }
-
-    public boolean isJobComplete() {
-        // TODO: implement
-        return true;
-    }
-
-    public Date getReportTimestamp() {
-        // TODO: implement
-        return null;
-    }
+  public Date getReportTimestamp() {
+    // TODO: implement
+    return null;
+  }
 
 }

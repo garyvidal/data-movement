@@ -13,31 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement.impl;
+package com.marklogic.datamovement;
 
-public class CustomJobReportImpl<CustomEvent> extends JobReportImpl {
-    public long getCreatesCount() {
-        // TODO: implement
-        return 0;
-    }
-
-    public long getWritesCount() {
-        // TODO: implement
-        return 0;
-    }
-
-    public long getPatchesCount() {
-        // TODO: implement
-        return 0;
-    }
-
-    public long getMetadataWritesCount() {
-        // TODO: implement
-        return 0;
-    }
-
-    public long getDeletesCount() {
-        // TODO: implement
-        return 0;
-    }
+public interface DeleteEvent extends DataMovementEvent {
+  public String getUri();
+  public Forest getSourceForest();
 }

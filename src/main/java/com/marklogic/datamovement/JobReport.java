@@ -15,20 +15,16 @@
  */
 package com.marklogic.datamovement;
 
-import com.marklogic.client.Page;
-
 import java.util.Date;
 
-public interface JobReport<Y extends DataMovementEvent> {
-    public long getBatchesCount();
-    public Page<Batch<Y>> getAllBatches(long start, int pageLength);
-    public long getSuccessBatchesCount();
-    public Page<Batch<Y>> getSuccessBatches(long start, int pageLength);
-    public long getFailureBatchesCount();
-    public Page<Batch<Y>> getFailureBatches(long start, int pageLength);
-    public long getEventCount();
-    public long getSuccessCount();
-    public long getBytesMoved();
-    public boolean isJobComplete();
-    public Date getReportTimestamp();
+public interface JobReport {
+  public long getSuccessEventsCount();
+  public long getFailureEventsCount();
+  public long getTotalEventsEstimate();
+  public long getFragmentCount();
+  public long getSuccessBatchesCount();
+  public long getFailureBatchesCount();
+  public long getBytesMoved();
+  public boolean isJobComplete();
+  public Date getReportTimestamp();
 }

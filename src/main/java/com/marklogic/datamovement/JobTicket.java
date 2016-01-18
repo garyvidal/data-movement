@@ -15,6 +15,9 @@
  */
 package com.marklogic.datamovement;
 
-public interface JobTicket<JobReport> {
-    public String getJobId();
+public interface JobTicket {
+  public String getJobId();
+  public JobType getJobType();
+
+  public enum JobType { IMPORT, EXPORT, COPY, UPDATE, DELETE, IMPORT_HOST_BATCHER, QUERY_HOST_BATCHER };
 }

@@ -15,6 +15,14 @@
  */
 package com.marklogic.datamovement;
 
-public interface UpdateSuccessListener {
-    void batchSuccess(String[] uris);
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface ExportDefinition extends JobDefinition<ExportDefinition> {
+  ExportDefinition query(CtsQueryDefinition query);
+  ExportDefinition outputFilePath(String path);
+  ExportDefinition outputCompress(boolean compress);
+  ExportDefinition transform(DataMovementTransform transform);
+  ExportDefinition onBatchSuccess(BatchListener<ExportEvent> listener);
+  ExportDefinition onOutputFileSuccess(BatchListener<ExportEvent> listener);
+  ExportDefinition onBatchFailure(BatchFailureListener<ExportEvent> listener);
 }

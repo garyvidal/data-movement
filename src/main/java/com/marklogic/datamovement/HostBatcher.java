@@ -15,6 +15,9 @@
  */
 package com.marklogic.datamovement;
 
-public interface ForestBatchFailureListener {
-    void batchFailure(ForestBatchFailure failure);
+public interface HostBatcher<T extends HostBatcher> {
+  public T jobName(String jobName);
+  public T batchSize(int batchSize);
+  /* update every <interval> milliseconds */
+  public T forestConfigUpdateInterval(long interval);
 }

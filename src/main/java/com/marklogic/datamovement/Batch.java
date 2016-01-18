@@ -18,10 +18,10 @@ package com.marklogic.datamovement;
 import java.util.Date;
 
 public interface Batch<T> {
-    public long getBatchNumber();
-    public T[] getEvents();
-    public Date getTimestamp();
-    public Forest getForest();
-    public long getBytesMoved();
+  public long getBatchNumber();
+  public T[] getItems();
+  public Date getTimestamp();
+  public Forest getForest();
+  public long getBytesMoved();
+  public JobTicket getJobTicket();
 }
-

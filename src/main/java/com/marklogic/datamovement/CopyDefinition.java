@@ -15,7 +15,10 @@
  */
 package com.marklogic.datamovement;
 
-public interface ImportFailure {
-    public String[]  getBatchUris();
-    public Exception getException();
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface CopyDefinition extends JobDefinition<CopyDefinition> {
+  public CopyDefinition query(CtsQueryDefinition query);
+  public CopyDefinition onBatchSuccess(BatchListener<CopyEvent> listener);
+  public CopyDefinition onBatchFailure(BatchFailureListener<CopyEvent> listener);
 }

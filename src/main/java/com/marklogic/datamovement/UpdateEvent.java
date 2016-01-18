@@ -15,7 +15,7 @@
  */
 package com.marklogic.datamovement;
 
-public interface MoveFailure {
-    public String[]  getBatchUris();
-    public Exception getException();
+public interface UpdateEvent extends DataMovementEvent {
+  public String getUri();
+  public Forest getSourceForest();
 }

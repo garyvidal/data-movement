@@ -15,13 +15,18 @@
  */
 package com.marklogic.datamovement;
 
-import com.marklogic.client.Page;
-import com.marklogic.client.query.CtsQueryDefinition;
-
-import java.util.Date;
+import java.util.Map;
 
 public interface JobDefinition<T extends JobDefinition> {
-    public T optionsFile(String optionsFilePath);
-    public T threadCount(int threadCount);
-    public T query(CtsQueryDefinition query);
+  public T jobName(String jobName);
+  public T optionsFile(String optionsFilePath);
+  public T threadCount(int threadCount);
+  public T batchSize(long threadCount);
+  public T database(String database);
+  public T mode(JobDefinition.Mode mode);
+  public T transactionSize(int transactionSize);
+  public T setOption(String name, String value);
+  public T setOptions(Map<String, String> options);
+
+  public enum Mode { LOCAL, DISTRIBUTED };
 }

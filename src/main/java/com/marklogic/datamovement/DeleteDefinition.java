@@ -15,6 +15,11 @@
  */
 package com.marklogic.datamovement;
 
-public interface UpdateFailureListener {
-    void batchFailure(UpdateFailure failure);
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface DeleteDefinition extends JobDefinition<DeleteDefinition> {
+  public DeleteDefinition query(CtsQueryDefinition query);
+  public DeleteDefinition onBatchSuccess(BatchListener<DeleteEvent> listener);
+  public DeleteDefinition onBatchFailure(BatchFailureListener<DeleteEvent> listener);
 }
+

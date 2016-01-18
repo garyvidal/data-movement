@@ -15,6 +15,11 @@
  */
 package com.marklogic.datamovement;
 
-public interface DeleteFailureListener {
-    void batchFailure(DeleteFailure failure);
+import com.marklogic.client.io.Format;
+
+public interface QueryEvent extends DataMovementEvent {
+  public String getSourceUri(); // the uri in the db
+  public Forest getSourceForest();
+  public Format getFormat();
+  public String getMimetype();
 }

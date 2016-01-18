@@ -15,10 +15,11 @@
  */
 package com.marklogic.datamovement;
 
-public interface CustomJobReport<CustomEvent> extends JobReport {
-    public long getCreatesCount();
-    public long getWritesCount();
-    public long getPatchesCount();
-    public long getMetadataWritesCount();
-    public long getDeletesCount();
+import com.marklogic.client.io.marker.TextWriteHandle;
+
+public interface AdhocTransform extends DataMovementTransform<AdhocTransform> {
+  public AdhocTransform javascript(String javascript);
+  public AdhocTransform javascript(TextWriteHandle javascript);
+  public AdhocTransform xquery(String xquery);
+  public AdhocTransform xquery(TextWriteHandle xquery);
 }

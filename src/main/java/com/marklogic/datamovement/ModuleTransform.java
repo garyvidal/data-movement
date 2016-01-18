@@ -15,6 +15,10 @@
  */
 package com.marklogic.datamovement;
 
-public interface CopySuccessListener {
-    void batchSuccess(String[] uris);
+import com.marklogic.client.query.CtsQueryDefinition;
+
+public interface ModuleTransform extends DataMovementTransform<ModuleTransform> {
+  public String getModulePath();
+  public String getFunctionName();
+  public String getFunctionNamespace();
 }
