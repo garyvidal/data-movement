@@ -17,14 +17,28 @@ package com.marklogic.datamovement;
 
 public interface ImportDefinition extends JobDefinition<ImportDefinition> {
   public ImportDefinition maxSplitSize(int splitSize);
+  public int getMaxSplitSize();
   public ImportDefinition minSplitSize(int splitSize);
+  public int getMinSplitSize();
   public ImportDefinition inputFilePath(String path);
+  public String getInputFilePath();
   public ImportDefinition inputFilePattern(String pattern);
+  public String getInputFilePattern();
   public ImportDefinition transform(DataMovementTransform transform);
+  public DataMovementTransform getTransform();
   public ImportDefinition xmlRepairLevel(ImportDefinition.XmlRepairLevel xmlRepairLevel);
+  public ImportDefinition.XmlRepairLevel getXmlRepairLevel();
   public ImportDefinition onBatchSuccess(BatchListener<ImportEvent> listener);
-  public ImportDefinition onBatchFailure(BatchListener<ImportEvent> listener);
   public ImportDefinition onBatchFailure(BatchFailureListener<ImportEvent> listener);
 
-  public enum XmlRepairLevel { DEFAULT, FULL, NONE };
+  public enum XmlRepairLevel {
+    DEFAULT,
+    FULL,
+    NONE;
+
+    public String toString() {
+      return super.toString().toLowerCase();
+      
+    }
+  };
 }

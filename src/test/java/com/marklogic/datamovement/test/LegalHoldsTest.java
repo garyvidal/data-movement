@@ -21,11 +21,7 @@ import org.junit.Test;
 import static org.junit.Assert.fail;
 
 import com.marklogic.datamovement.Batch;
-import com.marklogic.datamovement.CustomEvent;
-import com.marklogic.datamovement.CustomJobReport;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ForestBatcher;
-import com.marklogic.datamovement.ForestBatchFailure;
 import com.marklogic.datamovement.JobTicket;
 
 import com.marklogic.client.DatabaseClient;

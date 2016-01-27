@@ -15,18 +15,24 @@
  */
 package com.marklogic.datamovement;
 
+import com.marklogic.datamovement.DataMovementTransform;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-public interface JobDefinition<T extends JobDefinition> {
-  public T jobName(String jobName);
-  public T optionsFile(String optionsFilePath);
-  public T threadCount(int threadCount);
-  public T batchSize(long batchSize);
-  public T database(String database);
-  public T mode(JobDefinition.Mode mode);
-  public T transactionSize(int transactionSize);
-  public T setOption(String name, String value);
-  public T setOptions(Map<String, String> options);
-
-  public enum Mode { LOCAL, DISTRIBUTED };
+public class DataMovementTransformImpl<T extends DataMovementTransform<T>>
+  extends HashMap<String,List<String>>
+  implements DataMovementTransform<T>
+{
+  public T addParameter(String name, String... newValues) {
+    List<String> existingValues = get(name);
+    if ( existingValues == null ) {
+      existingValues = new ArrayList<String>();
+      put(name, existingValues);
+    }
+    if ( newValues != null ) existingValues.addAll(Arrays.asList(newValues));
+    return (T) this;
+  }
 }

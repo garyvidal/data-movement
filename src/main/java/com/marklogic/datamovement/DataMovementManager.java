@@ -16,9 +16,14 @@
 package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.datamovement.impl.ImportDefinitionImpl;
+import com.marklogic.datamovement.impl.ImportHostBatcherImpl;
+import com.marklogic.datamovement.impl.MlcpMovementServices;
+import com.marklogic.datamovement.impl.DataMovementServices;
 
 public class DataMovementManager {
   private DatabaseClient client;
+  private DataMovementServices service = new MlcpMovementServices();
 
   private DataMovementManager() {
     // TODO: implement
@@ -38,49 +43,39 @@ public class DataMovementManager {
   }
 
   public JobTicket startJob(ImportDefinition def) {
-    // TODO: implement
-    return null;
+    return service.startJob(def);
   }
   public JobTicket startJob(ExportDefinition def) {
-    // TODO: implement
-    return null;
+    return service.startJob(def);
   }
   public JobTicket startJob(CopyDefinition def) {
-    // TODO: implement
-    return null;
+    return service.startJob(def);
   }
   public JobTicket startJob(UpdateDefinition def) {
-    // TODO: implement
-    return null;
+    return service.startJob(def);
   }
   public JobTicket startJob(DeleteDefinition def) {
-    // TODO: implement
-    return null;
+    return service.startJob(def);
   }
 
   public JobTicket startJob(ImportHostBatcher batcher) {
-    // TODO: implement
-    return null;
+    return service.startJob(batcher);
   }
 
   public JobTicket startJob(QueryHostBatcher batcher) {
-    // TODO: implement
-    return null;
+    return service.startJob(batcher);
   }
 
   public JobReport getJobReport(JobTicket ticket) {
-    // TODO: implement
-    return null;
+    return service.getJobReport(ticket);
   }
 
   public void stopJob(JobTicket ticket) {
-    // TODO: implement
+    service.stopJob(ticket);
   }
 
   public ImportHostBatcher newImportHostBatcher() {
-    //return new ImportHostBatcherImpl();
-    // TODO: implement
-    return null;
+    return new ImportHostBatcherImpl();
   }
 
   public ImportHostBatcher newQueryHostBatcher() {
@@ -90,9 +85,7 @@ public class DataMovementManager {
   }
 
   public ImportDefinition newImportDefinition() {
-    //return new ImportDefinitionImpl();
-    // TODO: implement
-    return null;
+    return new ImportDefinitionImpl();
   }
 
   public ExportDefinition newExportDefinition() {
@@ -120,15 +113,11 @@ public class DataMovementManager {
   }
 
   public ModuleTransform newModuleTransform(String modulePath, String functionName) {
-    //return new ModuleTransformImpl(modulePath, functionName);
-    // TODO: implement
-    return null;
+    return new ModuleTransformImpl(modulePath, functionName, null);
   }
 
   public ModuleTransform newModuleTransform(String modulePath, String functionName, String functionNamespace) {
-    //return new ModuleTransformImpl(modulePath, functionName, functionNamespace);
-    // TODO: implement
-    return null;
+    return new ModuleTransformImpl(modulePath, functionName, functionNamespace);
   }
 
   public AdhocTransform newAdhocTransform() {

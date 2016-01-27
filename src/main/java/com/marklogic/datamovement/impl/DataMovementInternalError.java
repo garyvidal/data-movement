@@ -13,20 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.impl;
 
-import java.util.Map;
-
-public interface JobDefinition<T extends JobDefinition> {
-  public T jobName(String jobName);
-  public T optionsFile(String optionsFilePath);
-  public T threadCount(int threadCount);
-  public T batchSize(long batchSize);
-  public T database(String database);
-  public T mode(JobDefinition.Mode mode);
-  public T transactionSize(int transactionSize);
-  public T setOption(String name, String value);
-  public T setOptions(Map<String, String> options);
-
-  public enum Mode { LOCAL, DISTRIBUTED };
+public class DataMovementInternalError extends InternalError {
+  DataMovementInternalError(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

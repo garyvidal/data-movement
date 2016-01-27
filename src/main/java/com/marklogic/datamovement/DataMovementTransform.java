@@ -15,10 +15,14 @@
  */
 package com.marklogic.datamovement;
 
-import com.marklogic.client.query.CtsQueryDefinition;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-public interface DataMovementTransform<T extends DataMovementTransform> { // TODO: add "extends Map<String,List<String>>"
-  public T addParameter(String name, String value);
+public interface DataMovementTransform<T extends DataMovementTransform<T>> extends Map<String,List<String>> {
   public T addParameter(String name, String... values);
   public int size();
+  @Override
+  public Set<String> keySet();
 }

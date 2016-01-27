@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.impl;
+
+import com.marklogic.datamovement.BatchListener;
+import com.marklogic.datamovement.BatchFailureListener;
+import com.marklogic.datamovement.DataMovementTransform;
+import com.marklogic.datamovement.ImportDefinition.XmlRepairLevel;
+import com.marklogic.datamovement.ImportEvent;
+import com.marklogic.datamovement.ImportHostBatcher;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.document.DocumentDescriptor;
@@ -120,9 +127,8 @@ public class ImportHostBatcherImpl
     return this;
   }
 
-  public ImportHostBatcher xmlRepairLevel(ImportDefinition.XmlRepairLevel repairLevel) {
+  public ImportHostBatcher xmlRepairLevel(XmlRepairLevel repairLevel) {
     // TODO: implement
     return this;
   }
 }
-
