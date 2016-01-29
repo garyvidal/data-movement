@@ -21,11 +21,13 @@ import com.marklogic.datamovement.DataMovementTransform;
 import com.marklogic.datamovement.ImportDefinition;
 import com.marklogic.datamovement.ImportDefinition.XmlRepairLevel;
 import com.marklogic.datamovement.ImportEvent;
+import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.impl.MlcpUtil;
 
 import com.marklogic.client.DatabaseClient;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -36,7 +38,8 @@ public class ImportDefinitionImpl
   private int maxSplitSize;
   private int minSplitSize;
   private String path;
-  private String pattern;
+  private String inputFilePattern;
+  private ArrayList<String> outputUriReplace = new ArrayList<>();
   private DataMovementTransform transform;
   private ImportDefinition.XmlRepairLevel xmlRepairLevel;
   private BatchListener<ImportEvent> onSuccessListener;
@@ -63,7 +66,7 @@ public class ImportDefinitionImpl
   }
 
   public ImportDefinition inputFilePattern(String pattern) {
-    this.pattern = pattern;
+    this.inputFilePattern = inputFilePattern;
     return this;
   }
 
@@ -77,12 +80,34 @@ public class ImportDefinitionImpl
   }
 
   public String getInputFilePattern() {
-    return pattern;
+    return inputFilePattern;
   }
 
   public ImportDefinition inputFilePath(String path) {
     this.path = path;
     return this;
+  }
+
+  public ImportDefinition outputUriReplace(String pattern, String replacement) {
+    outputUriReplace.clear();
+    outputUriReplace.add(pattern); outputUriReplace.add(replacement);
+    return this;
+  }
+
+  public ImportDefinition outputUriReplace(String pattern, String replacement, String...patternReplacePairs) {
+    outputUriReplace(pattern, replacement);
+    if ( patternReplacePairs != null && patternReplacePairs.length > 0 ) {
+      if ( patternReplacePairs.length % 2 == 1 ) {
+        throw new IllegalArgumentException("You must provide an even number of arguments--they are pairs " +
+          "of pattern and replacement");
+      }
+      outputUriReplace.addAll(Arrays.asList(patternReplacePairs));
+    }
+    return this;
+  }
+
+  public String[] getOutputUriReplace() {
+    return outputUriReplace.toArray(new String[0]);
   }
 
   public DataMovementTransform getTransform() {
@@ -110,9 +135,13 @@ public class ImportDefinitionImpl
 
   public List<String> getMlcpArgs() {
     ArrayList<String> args = new ArrayList<String>();
+    args.add(JobTicket.JobType.IMPORT.toString());
     try {
       args.addAll( MlcpUtil.argsFromGetters(this,
         "getMaxSplitSize", "getMinSplitSize", "getInputFilePath", "getXmlRepairLevel")
+      );
+      args.addAll( MlcpUtil.argsForRegexPairs(this,
+        "getOutputUriReplace")
       );
       args.addAll( MlcpUtil.argsForTransforms(transform) );
     } catch(Exception e) {

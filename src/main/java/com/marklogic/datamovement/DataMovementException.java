@@ -13,25 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement.impl;
+package com.marklogic.datamovement;
 
-import com.marklogic.datamovement.JobTicket;
-import com.marklogic.datamovement.JobTicket.JobType;
-
-public class JobTicketImpl implements JobTicket {
-  private String jobId;
-  private JobType jobType;
-
-  public JobTicketImpl(String jobId, JobType jobType) {
-    this.jobId = jobId;
-    this.jobType = jobType;
-  }
-
-  public String getJobId() {
-    return jobId;
-  }
-
-  public JobType getJobType() {
-    return jobType;
+public class DataMovementException extends RuntimeException {
+  public DataMovementException(String message, Throwable cause) {
+    super(message, cause);
   }
 }

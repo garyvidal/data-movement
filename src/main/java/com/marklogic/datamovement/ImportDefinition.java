@@ -24,6 +24,9 @@ public interface ImportDefinition extends JobDefinition<ImportDefinition> {
   public String getInputFilePath();
   public ImportDefinition inputFilePattern(String pattern);
   public String getInputFilePattern();
+  public ImportDefinition outputUriReplace(String pattern, String replacement);
+  public ImportDefinition outputUriReplace(String pattern, String replacement, String...patternReplacePairs);
+  public String[] getOutputUriReplace();
   public ImportDefinition transform(DataMovementTransform transform);
   public DataMovementTransform getTransform();
   public ImportDefinition xmlRepairLevel(ImportDefinition.XmlRepairLevel xmlRepairLevel);

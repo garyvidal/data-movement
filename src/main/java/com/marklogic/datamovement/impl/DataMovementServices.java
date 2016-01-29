@@ -25,7 +25,12 @@ import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.datamovement.UpdateDefinition;
 
-public interface DataMovementServices {
+import com.marklogic.client.DatabaseClient;
+
+public interface DataMovementServices<T extends DataMovementServices> {
+  public T setClient(DatabaseClient client);
+  public DatabaseClient getClient();
+
   public JobTicket startJob(ImportDefinition def);
   public JobTicket startJob(ExportDefinition def);
   public JobTicket startJob(CopyDefinition def);

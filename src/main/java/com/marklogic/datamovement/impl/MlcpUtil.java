@@ -20,6 +20,10 @@ import com.marklogic.datamovement.DataMovementTransform;
 import com.marklogic.datamovement.JobDefinition;
 import com.marklogic.datamovement.ModuleTransform;
 
+import com.marklogic.client.DatabaseClient;
+
+import com.marklogic.contentpump.ConfigConstants;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -36,8 +40,28 @@ public class MlcpUtil {
   // look in the method name for any cap char followed by lower-case chars
   private static Pattern pattern = Pattern.compile("[A-Z][a-z]+");
 
+  /** Prepares mlcp command-line args for connection and authentication
+   */
+  public static List<String> argsForClient(DatabaseClient client) {
+    ArrayList<String> mlcpArgs = new ArrayList<String>();
+    if ( client != null ) {
+      mlcpArgs.add("-" + ConfigConstants.HOST);        mlcpArgs.add(client.getHost());
+      mlcpArgs.add("-" + ConfigConstants.PORT);        mlcpArgs.add(String.valueOf(client.getPort()));
+      if ( client.getUser() != null ) {
+        mlcpArgs.add("-" + ConfigConstants.USERNAME);  mlcpArgs.add(client.getUser());
+      }
+      if ( client.getPassword() != null ) {
+        mlcpArgs.add("-" + ConfigConstants.PASSWORD);  mlcpArgs.add(client.getPassword());
+      }
+      if ( client.getDatabase() != null ) {
+        mlcpArgs.add("-" + ConfigConstants.DATABASE);  mlcpArgs.add(client.getDatabase());
+      }
+    }
+    return mlcpArgs;
+  }
+
   /**
-   * Helps prepare mlcp command line args by calling the getter for each
+   * Helps prepare mlcp command-line args by calling the getter for each
    * property, generating two command-line mlcp args per property:
    *   1) the property name preceded by a hyphen and with init cap words
    *      converted to lower case and separated by underscores
@@ -53,14 +77,16 @@ public class MlcpUtil {
     ArrayList<String> mlcpArgs = new ArrayList<String>();
     for ( String methodName : getterMethodNames ) {
       String argName = convertMethodNameToArgName(methodName);
-      mlcpArgs.add(argName);
 
       // get getter method
       Method getter = def.getClass().getDeclaredMethod(methodName, null);
       // invoke getter method on our def instance
       Object argValue = getter.invoke(def, null);
 
-      mlcpArgs.add(argValue.toString());
+      if ( argValue != null ) {
+        mlcpArgs.add(argName);
+        mlcpArgs.add(argValue.toString());
+      }
     }
     return mlcpArgs;
   }
@@ -89,13 +115,46 @@ public class MlcpUtil {
     return "-" + String.join("_", words);
   }
 
+  /** For each getter, converts a List of pattern,replacement pairs into mlcp command-line syntax
+   * "pattern,'string',pattern,'string'"
+   */
+  public static List<String> argsForRegexPairs(JobDefinition def, String... getterMethodNames)
+    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
+  {
+    ArrayList<String> mlcpArgs = new ArrayList<String>();
+    for ( String methodName : getterMethodNames ) {
+      String argName = convertMethodNameToArgName(methodName);
+
+      // get getter method
+      Method getter = def.getClass().getDeclaredMethod(methodName, null);
+      // invoke getter method on our def instance
+      String[] argValue = (String[]) getter.invoke(def, null);
+      if ( argValue != null && argValue.length > 0 ) {
+        if ( argValue.length % 2 == 1 ) {
+          throw new IllegalStateException("Uneven number of values from " + methodName +
+            "--the values must be pairs of pattern and replacement");
+        }
+
+        mlcpArgs.add(argName);
+        ArrayList<String> values = new ArrayList<>();
+        for ( int i=0; i < argValue.length; i+=2 ) {
+          values.add(argValue[i] + ",'" + argValue[i+1] + "'");
+        }
+        mlcpArgs.add(String.join(",", values));
+      }
+    }
+    return mlcpArgs;
+  }
+
+  /** Converts a ModuleTransform or AdhocTransform into the equivalent mlcp command-line args
+   */
   public static List<String> argsForTransforms(DataMovementTransform transform) {
     ArrayList<String> args = new ArrayList<String>();
     if ( transform instanceof ModuleTransform ) {
       ModuleTransform moduleTransform = (ModuleTransform) transform;
-      args.add("-transform_module");    args.add( moduleTransform.getModulePath() );
-      args.add("-transform_function");  args.add( moduleTransform.getFunctionName() );
-      args.add("-transform_namespace"); args.add( moduleTransform.getFunctionNamespace() );
+      args.add("-" + ConfigConstants.TRANSFORM_MODULE);    args.add( moduleTransform.getModulePath() );
+      args.add("-" + ConfigConstants.TRANSFORM_FUNCTION);  args.add( moduleTransform.getFunctionName() );
+      args.add("-" + ConfigConstants.TRANSFORM_NAMESPACE); args.add( moduleTransform.getFunctionNamespace() );
     } else if ( transform instanceof AdhocTransform ) {
       throw new IllegalStateException("Not yet implemented in mlcp layer");
     }
@@ -126,9 +185,8 @@ public class MlcpUtil {
         }
       }
       // serialize the JSON object since mlcp only allows us to pass one string
-      args.add("-transform_param"); args.add( jsonObject.toString() );
+      args.add("-" + ConfigConstants.TRANSFORM_PARAM); args.add( jsonObject.toString() );
     }
     return args;
   }
 }
-

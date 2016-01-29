@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
+import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.ModuleTransform;
 
 import com.marklogic.contentpump.ConfigConstants;
@@ -34,6 +35,7 @@ public class ImportDefinitionTest {
   public void testArgs() throws Exception {
     ImportDefinitionImpl def = new ImportDefinitionImpl();
     ArrayList<String> expectedMlcpParams = new ArrayList<String>();
+    expectedMlcpParams.add(JobTicket.JobType.IMPORT.toString());
 
     def.maxSplitSize(2);
     expectedMlcpParams.add("-" + ConfigConstants.MAX_SPLIT_SIZE);  expectedMlcpParams.add("2");

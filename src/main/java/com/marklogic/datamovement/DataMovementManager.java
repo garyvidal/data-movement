@@ -35,6 +35,7 @@ public class DataMovementManager {
 
   public DataMovementManager setClient(DatabaseClient client) {
     this.client = client;
+    service.setClient(client);
     return this;
   }
 

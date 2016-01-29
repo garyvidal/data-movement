@@ -16,6 +16,7 @@
 package com.marklogic.datamovement.impl;
 
 import com.marklogic.datamovement.CopyDefinition;
+import com.marklogic.datamovement.DataMovementException;
 import com.marklogic.datamovement.DeleteDefinition;
 import com.marklogic.datamovement.ExportDefinition;
 import com.marklogic.datamovement.ImportDefinition;
@@ -25,16 +26,40 @@ import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.datamovement.UpdateDefinition;
 
+import com.marklogic.client.DatabaseClient;
+
 import com.marklogic.contentpump.ContentPump;
 import com.marklogic.contentpump.utilities.OptionsFileUtil;
 
 import java.util.List;
+import java.util.UUID;
 
 public class MlcpMovementServices implements DataMovementServices {
+  private DatabaseClient client;
+
+  public DatabaseClient getClient() {
+    return client;
+  }
+
+  public MlcpMovementServices setClient(DatabaseClient client) {
+    this.client = client;
+    return this;
+  }
 
   public JobTicket startJob(ImportDefinition def) {
-    return null;
+    String jobId = generateJobId();
+    List<String> args = ((ImportDefinitionImpl) def).getMlcpArgs();
+    args.addAll( MlcpUtil.argsForClient(client) );
+System.out.println("DEBUG: [MlcpMovementServices] args =[" + String.join(" ", args)  + "]");
+    try {
+      String[] expandedArgs = OptionsFileUtil.expandArguments(args.toArray(new String[] {}));
+      ContentPump.runCommand(expandedArgs);
+    } catch(Exception e) {
+      throw new DataMovementException("error expanding arguments: " + e.toString(), e);
+    }
+    return new JobTicketImpl(jobId, JobTicket.JobType.IMPORT);
   }
+
   public JobTicket startJob(ExportDefinition def) {
     // TODO: implement
     return null;
@@ -76,5 +101,9 @@ public class MlcpMovementServices implements DataMovementServices {
     String[] expandedArgs = OptionsFileUtil.expandArguments(args);
 
     ContentPump.runCommand(expandedArgs);
+  }
+
+  private String generateJobId() {
+    return UUID.randomUUID().toString();
   }
 }
