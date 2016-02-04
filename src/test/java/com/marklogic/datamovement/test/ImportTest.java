@@ -18,7 +18,7 @@ package com.marklogic.datamovement.test;
 import org.junit.Test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.marklogic.datamovement.DataMovementManager;
@@ -30,9 +30,14 @@ import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
 import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.io.FileHandle;
+import com.marklogic.client.io.Format;
 
 import com.marklogic.contentpump.ConfigConstants;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,32 +46,49 @@ public class ImportTest {
   private static DatabaseClient client =
     DatabaseClientFactory.newClient("localhost", 8000, "admin", "admin", Authentication.DIGEST);
   private static DocumentManager docMgr = client.newDocumentManager();
-  private static String uri = "pom.xml";
+  private static String uri = "ImportTest_content.json";
+  private static String module = "ImportTest_transform.sjs";
+  private static String moduleFunction = "ImportTest_transform_function";
 
   @BeforeClass
   public static void beforeClass() {
-    //System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "debug");
+    System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "debug");
     docMgr.delete(uri);
-
+    installModule();
   }
 
   @AfterClass
   public static void afterClass() {
-    docMgr.delete(uri);
+    //docMgr.delete(uri);
     client.release();
+  }
+
+  public static void installModule() {
+    client.newServerConfigManager().newExtensionLibrariesManager().write(
+      "/ext/" + module, new FileHandle(new File("src/test/resources/" + module)).withFormat(Format.TEXT));
   }
 
   @Test
   public void testArgs() throws Exception {
     moveMgr.setClient(client);
 
-    assertTrue( docMgr.exists(uri) == null );
+    assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
+      docMgr.exists(uri), null );
 
     ImportDefinition def = moveMgr.newImportDefinition()
-      .inputFilePath(uri)
+      .inputFilePath("src/test/resources/" + uri)
+      .transform(
+        moveMgr.newModuleTransform("/ext/" + module, moduleFunction)
+//          can't do this yet because of bug 37763
+//          .addParameter("newValue", "test2")
+      )
+      // temporary work-around
+      .setOption("transform_param", "test2")
       .outputUriReplace("/.*", uri);
     JobTicket ticket = moveMgr.startJob(def);
-    assertTrue( docMgr.exists(uri) != null );
+    Thread.sleep(1000);
+    assertEquals( "the transform should have changed testProperty to 'test2'",
+      ((JsonNode) docMgr.readAs(uri, JsonNode.class)).get("testProperty").textValue(), "test2" );
   }
 }
 

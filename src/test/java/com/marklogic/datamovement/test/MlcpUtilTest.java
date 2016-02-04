@@ -26,54 +26,34 @@ import com.marklogic.datamovement.impl.MlcpUtil;
 import com.marklogic.contentpump.ConfigConstants;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class MlcpUtilTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
 
   @Test
-  public void testArgsFromGetters() throws Exception {
-    ImportDefinition def = moveMgr.newImportDefinition();
-    ArrayList<String> expectedMlcpParams = new ArrayList<String>();
-
-    def.maxSplitSize(2);
-    expectedMlcpParams.add("-" + ConfigConstants.MAX_SPLIT_SIZE);  expectedMlcpParams.add("2");
-
-    def.minSplitSize(1);
-    expectedMlcpParams.add("-" + ConfigConstants.MIN_SPLIT_SIZE);  expectedMlcpParams.add("1");
-
-    def.inputFilePath("/a/b/c");
-    expectedMlcpParams.add("-" + ConfigConstants.INPUT_FILE_PATH); expectedMlcpParams.add("/a/b/c");
-
-    def.xmlRepairLevel(ImportDefinition.XmlRepairLevel.DEFAULT);
-    expectedMlcpParams.add("-" + ConfigConstants.XML_REPAIR_LEVEL); expectedMlcpParams.add("default");
-
-    List<String> generatedMlcpParams = MlcpUtil
-      .argsFromGetters(def, "getMaxSplitSize", "getMinSplitSize", "getInputFilePath", "getXmlRepairLevel");
-    assertEquals(expectedMlcpParams, generatedMlcpParams);
-  }
-
-  @Test
   public void testArgsForTransforms() throws Exception {
-    ArrayList<String> expectedMlcpParams = new ArrayList<String>();
+    LinkedHashMap<String,String> expectedMlcpParams = new LinkedHashMap<>();
     ModuleTransform transform = moveMgr.newModuleTransform(
       "/path/to/myModule.sjs", "myFunction", "http://marklogic.com/example/namespace");
     transform.addParameter("myParam", "test");
 
-    expectedMlcpParams.add("-" + ConfigConstants.TRANSFORM_MODULE);
-    expectedMlcpParams.add("/path/to/myModule.sjs");
+    expectedMlcpParams.put(ConfigConstants.TRANSFORM_MODULE,
+      "/path/to/myModule.sjs");
 
-    expectedMlcpParams.add("-" + ConfigConstants.TRANSFORM_FUNCTION);
-    expectedMlcpParams.add("myFunction");
+    expectedMlcpParams.put(ConfigConstants.TRANSFORM_FUNCTION,
+      "myFunction");
 
-    expectedMlcpParams.add("-" + ConfigConstants.TRANSFORM_NAMESPACE);
-    expectedMlcpParams.add("http://marklogic.com/example/namespace");
+    expectedMlcpParams.put(ConfigConstants.TRANSFORM_NAMESPACE,
+      "http://marklogic.com/example/namespace");
 
-    expectedMlcpParams.add("-" + ConfigConstants.TRANSFORM_PARAM);
-    expectedMlcpParams.add("{\"myParam\":\"test\"}");
+    expectedMlcpParams.put(ConfigConstants.TRANSFORM_PARAM,
+      "{\"myParam\":\"test\"}");
 
-    List<String> generatedMlcpParams = MlcpUtil
-      .argsForTransforms(transform);
+    Map<String,String> generatedMlcpParams = MlcpUtil
+      .optionsForTransforms(transform);
     assertEquals(expectedMlcpParams, generatedMlcpParams);
   }
 }

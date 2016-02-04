@@ -19,7 +19,9 @@ import com.marklogic.datamovement.JobDefinition;
 
 import com.marklogic.client.DatabaseClient;
 
-import java.util.Hashtable;
+import com.marklogic.contentpump.ConfigConstants;
+
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class JobDefinitionImpl<T extends JobDefinition>
@@ -32,7 +34,7 @@ public class JobDefinitionImpl<T extends JobDefinition>
   private String database;
   private JobDefinition.Mode mode;
   private int transactionSize;
-  private Map<String, String> options = new Hashtable<String, String>();
+  private Map<String, String> options = new LinkedHashMap<String, String>();
 
   public JobDefinitionImpl() {}
 
@@ -71,13 +73,56 @@ public class JobDefinitionImpl<T extends JobDefinition>
     return (T) this;
   }
 
-  public T setOption(String name, String value) {
+  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+   */
+  public synchronized T setOption(String name, String value) {
+    checkMlcpOptionName(name);
     this.options.put(name, value);
     return (T) this;
   }
 
-  public T setOptions(Map<String, String> options) {
+  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+   */
+  public synchronized T setOptions(Map<String, String> options) {
+    if ( options == null ) return (T) this;
+    for ( String name : options.keySet() ) {
+      checkMlcpOptionName(name);
+    }
     this.options.putAll(options);
     return (T) this;
+  }
+
+  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+   */
+  public String getOption(String name) {
+    checkMlcpOptionName(name);
+    return this.options.get(name);
+  }
+
+  /** Return all options set on this instance.
+   */
+  public Map<String, String> getOptions() {
+    return options;
+  }
+
+  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+   */
+  public synchronized T removeOption(String name) {
+    checkMlcpOptionName(name);
+    this.options.remove(name);
+    return (T) this;
+  }
+
+  private void checkMlcpOptionName(String name) {
+    if ( name == null ) throw new IllegalArgumentException("option name must not be null");
+    try {
+      if ( ConfigConstants.class.getDeclaredField(name.toUpperCase()) != null ) {
+        return;
+      }
+    } catch (NoSuchFieldException e) {
+    } catch (SecurityException e) {
+    }
+    throw new IllegalArgumentException("option '" + name +
+      "' not found--check if your option name is valid");
   }
 }

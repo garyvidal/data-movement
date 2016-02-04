@@ -24,7 +24,7 @@ import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.impl.MlcpUtil;
 
-import com.marklogic.client.DatabaseClient;
+import com.marklogic.contentpump.ConfigConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,8 +37,6 @@ public class ImportDefinitionImpl
 {
   private int maxSplitSize;
   private int minSplitSize;
-  private String path;
-  private String inputFilePattern;
   private ArrayList<String> outputUriReplace = new ArrayList<>();
   private DataMovementTransform transform;
   private ImportDefinition.XmlRepairLevel xmlRepairLevel;
@@ -49,7 +47,7 @@ public class ImportDefinitionImpl
 
   public ImportDefinition maxSplitSize(int splitSize) {
     this.maxSplitSize = splitSize;
-    return this;
+    return setOption(ConfigConstants.MAX_SPLIT_SIZE, String.valueOf(splitSize));
   }
 
   public int getMaxSplitSize() {
@@ -58,51 +56,49 @@ public class ImportDefinitionImpl
 
   public ImportDefinition minSplitSize(int splitSize) {
     this.minSplitSize = splitSize;
-    return this;
+    return setOption(ConfigConstants.MIN_SPLIT_SIZE, String.valueOf(splitSize));
   }
 
   public int getMinSplitSize() {
     return minSplitSize;
   }
 
-  public ImportDefinition inputFilePattern(String pattern) {
-    this.inputFilePattern = inputFilePattern;
-    return this;
+  public ImportDefinition inputFilePath(String path) {
+    return setOption(ConfigConstants.INPUT_FILE_PATH, path);
   }
 
   public String getInputFilePath() {
-    return path;
+    return getOption(ConfigConstants.INPUT_FILE_PATH);
   }
 
   public ImportDefinition transform(DataMovementTransform transform) {
     this.transform = transform;
+    MlcpUtil.clearOptionsForTransforms(getOptions());
+    setOptions( MlcpUtil.optionsForTransforms(transform) );
     return this;
+  }
+
+  public ImportDefinition inputFilePattern(String pattern) {
+    return setOption(ConfigConstants.INPUT_FILE_PATTERN, pattern);
   }
 
   public String getInputFilePattern() {
-    return inputFilePattern;
-  }
-
-  public ImportDefinition inputFilePath(String path) {
-    this.path = path;
-    return this;
+    return getOption(ConfigConstants.INPUT_FILE_PATTERN);
   }
 
   public ImportDefinition outputUriReplace(String pattern, String replacement) {
     outputUriReplace.clear();
+    if ( pattern == null )     throw new IllegalArgumentException("pattern must not be null");
+    if ( replacement == null ) throw new IllegalArgumentException("replacement must not be null");
     outputUriReplace.add(pattern); outputUriReplace.add(replacement);
+    setOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
     return this;
   }
 
   public ImportDefinition outputUriReplace(String pattern, String replacement, String...patternReplacePairs) {
     outputUriReplace(pattern, replacement);
-    if ( patternReplacePairs != null && patternReplacePairs.length > 0 ) {
-      if ( patternReplacePairs.length % 2 == 1 ) {
-        throw new IllegalArgumentException("You must provide an even number of arguments--they are pairs " +
-          "of pattern and replacement");
-      }
-      outputUriReplace.addAll(Arrays.asList(patternReplacePairs));
-    }
+    outputUriReplace.addAll(Arrays.asList(patternReplacePairs));
+    setOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
     return this;
   }
 
@@ -116,7 +112,10 @@ public class ImportDefinitionImpl
 
   public ImportDefinition xmlRepairLevel(ImportDefinition.XmlRepairLevel xmlRepairLevel) {
     this.xmlRepairLevel = xmlRepairLevel;
-    return this;
+    if ( xmlRepairLevel == null ) {
+      return removeOption(ConfigConstants.XML_REPAIR_LEVEL);
+    }
+    return setOption(ConfigConstants.XML_REPAIR_LEVEL, xmlRepairLevel.toString());
   }
 
   public ImportDefinition.XmlRepairLevel getXmlRepairLevel() {
@@ -136,16 +135,9 @@ public class ImportDefinitionImpl
   public List<String> getMlcpArgs() {
     ArrayList<String> args = new ArrayList<String>();
     args.add(JobTicket.JobType.IMPORT.toString());
-    try {
-      args.addAll( MlcpUtil.argsFromGetters(this,
-        "getMaxSplitSize", "getMinSplitSize", "getInputFilePath", "getXmlRepairLevel")
-      );
-      args.addAll( MlcpUtil.argsForRegexPairs(this,
-        "getOutputUriReplace")
-      );
-      args.addAll( MlcpUtil.argsForTransforms(transform) );
-    } catch(Exception e) {
-      throw new DataMovementInternalError("error internal to DMSDK: " + e.toString(), e);
+    Map<String, String> options = getOptions();
+    for ( String name: options.keySet() ) {
+      args.add( "-" + name ); args.add( options.get(name) );
     }
     return args;
   }

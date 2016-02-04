@@ -31,6 +31,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
@@ -60,110 +61,53 @@ public class MlcpUtil {
     return mlcpArgs;
   }
 
-  /**
-   * Helps prepare mlcp command-line args by calling the getter for each
-   * property, generating two command-line mlcp args per property:
-   *   1) the property name preceded by a hyphen and with init cap words
-   *      converted to lower case and separated by underscores
-   *   2) the property value from calling the getter method for that property
-   * For example, if def has a property "optionsFile" I can call
-   * MlcpUtil.argsFromGetters(def, "getOptionsFile") and I will get back an
-   * array of length 2 with the first element "-options_file" and the second
-   * element the result of calling def.getOptionsFile().
-   */
-  public static List<String> argsFromGetters(JobDefinition def, String... getterMethodNames)
-    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
-  {
-    ArrayList<String> mlcpArgs = new ArrayList<String>();
-    for ( String methodName : getterMethodNames ) {
-      String argName = convertMethodNameToArgName(methodName);
-
-      // get getter method
-      Method getter = def.getClass().getDeclaredMethod(methodName, null);
-      // invoke getter method on our def instance
-      Object argValue = getter.invoke(def, null);
-
-      if ( argValue != null ) {
-        mlcpArgs.add(argName);
-        mlcpArgs.add(argValue.toString());
-      }
-    }
-    return mlcpArgs;
-  }
-
-  /** Converts methodNames like "getOptionsFile" to command line argument names
-   * like "-options_file"
-   */
-  private static String convertMethodNameToArgName(String methodName) {
-    if ( methodName == null || ! methodName.startsWith("get") ) {
-          throw new IllegalStateException("method name '" + methodName + "'" +
-            " doesn't match expected pattern. It should begin with 'get'.");
-    }
-    ArrayList<String> words = new ArrayList<String>();
-    Matcher matcher = pattern.matcher(methodName);
-    // find each word (cap char followed by lower-case chars)
-    while ( matcher.find() ) {
-        // get the whole match (one word) and make it lower-case
-        String word = matcher.group(0).toLowerCase();
-        words.add(word);
-    }
-    if ( words.size() == 0 ) {
-          throw new IllegalStateException("method name '" + methodName + "'" +
-            " doesn't match expected pattern. It should have init-cap words in it.");
-    }
-    // begin with hyphen, then add each word connected with underscores
-    return "-" + String.join("_", words);
-  }
-
   /** For each getter, converts a List of pattern,replacement pairs into mlcp command-line syntax
    * "pattern,'string',pattern,'string'"
    */
-  public static List<String> argsForRegexPairs(JobDefinition def, String... getterMethodNames)
-    throws NoSuchMethodException, IllegalAccessException, InvocationTargetException
-  {
-    ArrayList<String> mlcpArgs = new ArrayList<String>();
-    for ( String methodName : getterMethodNames ) {
-      String argName = convertMethodNameToArgName(methodName);
-
-      // get getter method
-      Method getter = def.getClass().getDeclaredMethod(methodName, null);
-      // invoke getter method on our def instance
-      String[] argValue = (String[]) getter.invoke(def, null);
-      if ( argValue != null && argValue.length > 0 ) {
-        if ( argValue.length % 2 == 1 ) {
-          throw new IllegalStateException("Uneven number of values from " + methodName +
-            "--the values must be pairs of pattern and replacement");
-        }
-
-        mlcpArgs.add(argName);
-        ArrayList<String> values = new ArrayList<>();
-        for ( int i=0; i < argValue.length; i+=2 ) {
-          values.add(argValue[i] + ",'" + argValue[i+1] + "'");
-        }
-        mlcpArgs.add(String.join(",", values));
-      }
+  public static String combineRegexPairs(ArrayList<String> pairs) {
+    StringBuffer value = new StringBuffer();
+    if ( pairs == null ) throw new IllegalArgumentException("pairs must not be null");
+    if ( pairs.size() % 2 == 1 ) {
+      throw new IllegalArgumentException("You must provide an even number of arguments--they are pairs " +
+        "of pattern and replacement");
     }
-    return mlcpArgs;
+    for ( int i=0; i < pairs.size(); i += 2 ) {
+      String pattern = pairs.get(i);
+      String replacement = pairs.get(i+1);
+      value.append(pattern + ",'" + replacement + "'");
+    }
+    return value.toString();
   }
 
-  /** Converts a ModuleTransform or AdhocTransform into the equivalent mlcp command-line args
+  /** Clears out options related to transforms
    */
-  public static List<String> argsForTransforms(DataMovementTransform transform) {
-    ArrayList<String> args = new ArrayList<String>();
+  public static void clearOptionsForTransforms(Map<String,String> options) {
+    options.remove(ConfigConstants.TRANSFORM_MODULE);
+    options.remove(ConfigConstants.TRANSFORM_FUNCTION);
+    options.remove(ConfigConstants.TRANSFORM_NAMESPACE);
+    options.remove(ConfigConstants.TRANSFORM_PARAM);
+  }
+
+  /** Converts a ModuleTransform or AdhocTransform into the equivalent mlcp command-line options
+   */
+  public static Map<String,String> optionsForTransforms(DataMovementTransform transform) {
+    LinkedHashMap<String,String> options = new LinkedHashMap<>();
     if ( transform instanceof ModuleTransform ) {
       ModuleTransform moduleTransform = (ModuleTransform) transform;
-      args.add("-" + ConfigConstants.TRANSFORM_MODULE);    args.add( moduleTransform.getModulePath() );
-      args.add("-" + ConfigConstants.TRANSFORM_FUNCTION);  args.add( moduleTransform.getFunctionName() );
-      args.add("-" + ConfigConstants.TRANSFORM_NAMESPACE); args.add( moduleTransform.getFunctionNamespace() );
+      options.put(ConfigConstants.TRANSFORM_MODULE,    moduleTransform.getModulePath() );
+      options.put(ConfigConstants.TRANSFORM_FUNCTION,  moduleTransform.getFunctionName() );
+      if ( moduleTransform.getFunctionNamespace() != null ) {
+        options.put(ConfigConstants.TRANSFORM_NAMESPACE, moduleTransform.getFunctionNamespace() );
+      }
     } else if ( transform instanceof AdhocTransform ) {
       throw new IllegalStateException("Not yet implemented in mlcp layer");
     }
-    args.addAll( argsForTransformParams(transform) );
-    return args;
+    options.putAll( optionsForTransformParams(transform) );
+    return options;
   }
 
-  private static List<String> argsForTransformParams(DataMovementTransform transform) {
-    ArrayList<String> args = new ArrayList<String>();
+  private static Map<String,String> optionsForTransformParams(DataMovementTransform transform) {
+    LinkedHashMap<String,String> options = new LinkedHashMap<>();
     // if there are custom transform parameters to send
     if ( transform != null && transform.size() > 0 ) {
       ObjectMapper mapper = new ObjectMapper();
@@ -185,8 +129,8 @@ public class MlcpUtil {
         }
       }
       // serialize the JSON object since mlcp only allows us to pass one string
-      args.add("-" + ConfigConstants.TRANSFORM_PARAM); args.add( jsonObject.toString() );
+      options.put(ConfigConstants.TRANSFORM_PARAM, jsonObject.toString() );
     }
-    return args;
+    return options;
   }
 }
