@@ -30,8 +30,9 @@ public class JobDefinitionImpl<T extends JobDefinition>
   private String jobName;
   private String optionsFilePath;
   private int threadCount;
+  private int threadCountPerSplit;
   private long batchSize;
-  private String database;
+  private String conf;
   private JobDefinition.Mode mode;
   private int transactionSize;
   private Map<String, String> options = new LinkedHashMap<String, String>();
@@ -45,32 +46,37 @@ public class JobDefinitionImpl<T extends JobDefinition>
 
   public T optionsFile(String optionsFilePath) {
     this.optionsFilePath = optionsFilePath;
-    return (T) this;
+    return setOption(ConfigConstants.OPTIONS_FILE, optionsFilePath);
   }
 
   public T threadCount(int threadCount) {
     this.threadCount = threadCount;
-    return (T) this;
+    return setOption(ConfigConstants.THREAD_COUNT, String.valueOf(threadCountPerSplit));
+  }
+
+  public T threadCountPerSplit(int threadCount) {
+    this.threadCountPerSplit = threadCountPerSplit;
+    return setOption(ConfigConstants.THREADS_PER_SPLIT, String.valueOf(threadCountPerSplit));
   }
 
   public T batchSize(long batchSize) {
     this.batchSize = batchSize;
-    return (T) this;
+    return setOption(ConfigConstants.BATCH_SIZE, String.valueOf(batchSize));
   }
 
-  public T database(String database) {
-    this.database = database;
-    return (T) this;
+  public T conf(String filepath) {
+    this.conf = filepath;
+    return setOption("conf", filepath);
   }
 
   public T mode(JobDefinition.Mode mode) {
     this.mode = mode;
-    return (T) this;
+    return setOption(ConfigConstants.MODE, mode.toString().toLowerCase());
   }
 
   public T transactionSize(int transactionSize) {
     this.transactionSize = transactionSize;
-    return (T) this;
+    return setOption(ConfigConstants.TRANSACTION_SIZE, String.valueOf(transactionSize));
   }
 
   /** All option names must match mlcp comman-line options (without the preceeding hyphen).
@@ -116,7 +122,10 @@ public class JobDefinitionImpl<T extends JobDefinition>
   private void checkMlcpOptionName(String name) {
     if ( name == null ) throw new IllegalArgumentException("option name must not be null");
     try {
-      if ( ConfigConstants.class.getDeclaredField(name.toUpperCase()) != null ) {
+      if ( ConfigConstants.class.getDeclaredField(name.toUpperCase()) != null ||
+           // for some reason "conf" is missing from ConfigConstants
+           "conf".equals(name) )
+      {
         return;
       }
     } catch (NoSuchFieldException e) {

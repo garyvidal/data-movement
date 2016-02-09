@@ -18,6 +18,6 @@ package com.marklogic.datamovement;
 public interface QueryHostBatcher extends HostBatcher<QueryHostBatcher> {
   public QueryHostBatcher snapshot(boolean doSnapshot);
   public QueryHostBatcher onUrisReady(BatchListener<String> uris);
-  public QueryHostBatcher onBatchUrisReady(BatchListener<QueryEvent> listener);
+  public QueryHostBatcher onMetadataReady(BatchListener<QueryEvent> listener);
   public QueryHostBatcher onQueryFailure(FailureListener<QueryHostException> listener);
 }
