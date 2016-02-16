@@ -20,6 +20,7 @@ import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportHostBatcherImpl;
 import com.marklogic.datamovement.impl.MlcpMovementServices;
 import com.marklogic.datamovement.impl.DataMovementServices;
+import com.marklogic.datamovement.impl.ModuleTransformImpl;
 
 public class DataMovementManager {
   private DatabaseClient client;
