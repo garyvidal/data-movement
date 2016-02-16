@@ -76,15 +76,15 @@ public class ImportTest {
       docMgr.exists(uri), null );
 
     ImportDefinition def = moveMgr.newImportDefinition()
-      .inputFilePath("src/test/resources/" + uri)
-      .transform(
+      .withInputFilePath("src/test/resources/" + uri)
+      .withTransform(
         moveMgr.newModuleTransform("/ext/" + module, moduleFunction)
 //          can't do this yet because of bug 37763
 //          .addParameter("newValue", "test2")
       )
       // temporary work-around
-      .setOption("transform_param", "test2")
-      .outputUriReplace("/.*", uri);
+      .withOption("transform_param", "test2")
+      .withOutputUriReplace("/.*", uri);
     JobTicket ticket = moveMgr.startJob(def);
     Thread.sleep(1000);
     assertEquals( "the transform should have changed testProperty to 'test2'",

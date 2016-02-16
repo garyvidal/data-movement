@@ -16,72 +16,93 @@
 package com.marklogic.datamovement.impl;
 
 import com.marklogic.datamovement.JobDefinition;
-
-import com.marklogic.client.DatabaseClient;
-
 import com.marklogic.contentpump.ConfigConstants;
 
+import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
-public class JobDefinitionImpl<T extends JobDefinition>
+public class JobDefinitionImpl<T extends JobDefinition<T>>
   implements JobDefinition<T>
 {
+  private static Set<String> configConstantsValues = new HashSet<>();
+  static {
+    for ( Field field : ConfigConstants.class.getDeclaredFields() ) {
+      try {
+        configConstantsValues.add( field.get(ConfigConstants.class).toString() );
+      } catch(Exception e) {}
+    }
+  }
+
   private String jobName;
-  private String optionsFilePath;
-  private int threadCount;
-  private int threadCountPerSplit;
-  private long batchSize;
-  private String conf;
   private JobDefinition.Mode mode;
-  private int transactionSize;
   private Map<String, String> options = new LinkedHashMap<String, String>();
 
   public JobDefinitionImpl() {}
 
-  public T jobName(String jobName) {
+  public T withJobName(String jobName) {
     this.jobName = jobName;
     return (T) this;
   }
 
-  public T optionsFile(String optionsFilePath) {
-    this.optionsFilePath = optionsFilePath;
-    return setOption(ConfigConstants.OPTIONS_FILE, optionsFilePath);
+  public T withOptionsFile(String optionsFilePath) {
+    return withOption(ConfigConstants.OPTIONS_FILE, optionsFilePath);
   }
 
-  public T threadCount(int threadCount) {
-    this.threadCount = threadCount;
-    return setOption(ConfigConstants.THREAD_COUNT, String.valueOf(threadCountPerSplit));
+  public T withThreadCount(int threadCount) {
+    return withOption(ConfigConstants.THREAD_COUNT, String.valueOf(threadCount));
   }
 
-  public T threadCountPerSplit(int threadCount) {
-    this.threadCountPerSplit = threadCountPerSplit;
-    return setOption(ConfigConstants.THREADS_PER_SPLIT, String.valueOf(threadCountPerSplit));
+  public int getThreadCount() {
+    return getIntegerOption(ConfigConstants.THREAD_COUNT, 10);
   }
 
-  public T batchSize(long batchSize) {
-    this.batchSize = batchSize;
-    return setOption(ConfigConstants.BATCH_SIZE, String.valueOf(batchSize));
+  public T withThreadCountPerSplit(int threadCount) {
+    return withOption(ConfigConstants.THREADS_PER_SPLIT, String.valueOf(threadCount));
   }
 
-  public T conf(String filepath) {
-    this.conf = filepath;
-    return setOption("conf", filepath);
+  public int getThreadCountPerSplit() {
+    return getIntegerOption(ConfigConstants.THREADS_PER_SPLIT, -1);
   }
 
-  public T mode(JobDefinition.Mode mode) {
+  public T withBatchSize(long batchSize) {
+    return withOption(ConfigConstants.BATCH_SIZE, String.valueOf(batchSize));
+  }
+
+  public long getBatchSize() {
+    return getLongOption(ConfigConstants.BATCH_SIZE, 100);
+  }
+
+  public T withConf(String filepath) {
+    return withOption("conf", filepath);
+  }
+
+  public String getConf() {
+    return getOption("conf");
+  }
+
+  public T withMode(JobDefinition.Mode mode) {
     this.mode = mode;
-    return setOption(ConfigConstants.MODE, mode.toString().toLowerCase());
+    return withOption(ConfigConstants.MODE, mode.toString().toLowerCase());
   }
 
-  public T transactionSize(int transactionSize) {
-    this.transactionSize = transactionSize;
-    return setOption(ConfigConstants.TRANSACTION_SIZE, String.valueOf(transactionSize));
+  public JobDefinition.Mode getMode() {
+    return this.mode;
+  }
+
+  public T withTransactionSize(int transactionSize) {
+    return withOption(ConfigConstants.TRANSACTION_SIZE, String.valueOf(transactionSize));
+  }
+
+  public int getTransactionSize() {
+    return getIntegerOption(ConfigConstants.TRANSACTION_SIZE, 10);
   }
 
   /** All option names must match mlcp comman-line options (without the preceeding hyphen).
    */
-  public synchronized T setOption(String name, String value) {
+  public synchronized T withOption(String name, String value) {
     checkMlcpOptionName(name);
     this.options.put(name, value);
     return (T) this;
@@ -89,7 +110,7 @@ public class JobDefinitionImpl<T extends JobDefinition>
 
   /** All option names must match mlcp comman-line options (without the preceeding hyphen).
    */
-  public synchronized T setOptions(Map<String, String> options) {
+  public synchronized T withOptions(Map<String, String> options) {
     if ( options == null ) return (T) this;
     for ( String name : options.keySet() ) {
       checkMlcpOptionName(name);
@@ -103,6 +124,24 @@ public class JobDefinitionImpl<T extends JobDefinition>
   public String getOption(String name) {
     checkMlcpOptionName(name);
     return this.options.get(name);
+  }
+
+  public boolean getBooleanOption(String name, boolean defaultValue) {
+    String value = getOption(name);
+    if ( value == null ) return defaultValue;
+    return Boolean.valueOf(value);
+  }
+
+  public long getLongOption(String name, long defaultValue) {
+    String value = getOption(name);
+    if ( value == null ) return defaultValue;
+    return Long.valueOf(value);
+  }
+
+  public int getIntegerOption(String name, int defaultValue) {
+    String value = getOption(name);
+    if ( value == null ) return defaultValue;
+    return Integer.valueOf(value);
   }
 
   /** Return all options set on this instance.
@@ -121,15 +160,11 @@ public class JobDefinitionImpl<T extends JobDefinition>
 
   private void checkMlcpOptionName(String name) {
     if ( name == null ) throw new IllegalArgumentException("option name must not be null");
-    try {
-      if ( ConfigConstants.class.getDeclaredField(name.toUpperCase()) != null ||
-           // for some reason "conf" is missing from ConfigConstants
-           "conf".equals(name) )
-      {
-        return;
-      }
-    } catch (NoSuchFieldException e) {
-    } catch (SecurityException e) {
+    if ( configConstantsValues.contains(name) ||
+         // for some reason "conf" is missing from ConfigConstants
+         "conf".equals(name) )
+    {
+      return;
     }
     throw new IllegalArgumentException("option '" + name +
       "' not found--check if your option name is valid");

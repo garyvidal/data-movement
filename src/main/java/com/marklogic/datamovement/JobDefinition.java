@@ -18,16 +18,16 @@ package com.marklogic.datamovement;
 import java.util.Map;
 
 public interface JobDefinition<T extends JobDefinition> {
-  public T jobName(String jobName);
-  public T batchSize(long batchSize);
-  public T conf(String filepath);
-  public T mode(JobDefinition.Mode mode);
-  public T optionsFile(String optionsFilePath);
-  public T threadCount(int threadCount);
-  public T threadCountPerSplit(int threadCount);
-  public T transactionSize(int transactionSize);
-  public T setOption(String name, String value);
-  public T setOptions(Map<String, String> options);
+  public T withJobName(String jobName);
+  public T withBatchSize(long batchSize);
+  public T withConf(String filepath);
+  public T withMode(JobDefinition.Mode mode);
+  public T withOptionsFile(String optionsFilePath);
+  public T withThreadCount(int threadCount);
+  public T withThreadCountPerSplit(int threadCount);
+  public T withTransactionSize(int transactionSize);
+  public T withOption(String name, String value);
+  public T withOptions(Map<String, String> options);
 
   public enum Mode { LOCAL, DISTRIBUTED };
 }

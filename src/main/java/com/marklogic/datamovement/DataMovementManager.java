@@ -85,7 +85,7 @@ public class DataMovementManager {
     return null;
   }
 
-  public ImportDefinition newImportDefinition() {
+  public ImportDefinition<?> newImportDefinition() {
     return new ImportDefinitionImpl();
   }
 

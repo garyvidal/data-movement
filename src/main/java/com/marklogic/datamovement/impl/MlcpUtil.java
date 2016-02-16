@@ -74,6 +74,7 @@ public class MlcpUtil {
     for ( int i=0; i < pairs.size(); i += 2 ) {
       String pattern = pairs.get(i);
       String replacement = pairs.get(i+1);
+      if ( value.length() > 0 ) value.append(",");
       value.append(pattern + ",'" + replacement + "'");
     }
     return value.toString();
