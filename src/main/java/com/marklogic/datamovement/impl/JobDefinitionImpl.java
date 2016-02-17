@@ -100,7 +100,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return getIntegerOption(ConfigConstants.TRANSACTION_SIZE, 10);
   }
 
-  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+  /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
   public synchronized T withOption(String name, String value) {
     checkMlcpOptionName(name);
@@ -108,7 +108,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return (T) this;
   }
 
-  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+  /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
   public synchronized T withOptions(Map<String, String> options) {
     if ( options == null ) return (T) this;
@@ -119,7 +119,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return (T) this;
   }
 
-  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+  /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
   public String getOption(String name) {
     checkMlcpOptionName(name);
@@ -150,7 +150,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return options;
   }
 
-  /** All option names must match mlcp comman-line options (without the preceeding hyphen).
+  /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
   public synchronized T removeOption(String name) {
     checkMlcpOptionName(name);
