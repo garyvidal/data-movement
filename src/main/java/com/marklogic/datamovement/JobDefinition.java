@@ -27,7 +27,10 @@ public interface JobDefinition<T extends JobDefinition> {
   public T withThreadCountPerSplit(int threadCount);
   public T withTransactionSize(int transactionSize);
   public T withOption(String name, String value);
-  public T withOptions(Map<String, String> options);
+  public T withOptions(Map<String,String> options);
+  public String getOption(String name);
+  public Map<String,String> getOptions();
+  public T removeOption(String name);
 
   public enum Mode { LOCAL, DISTRIBUTED };
 }
