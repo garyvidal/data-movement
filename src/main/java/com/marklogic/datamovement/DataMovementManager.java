@@ -77,7 +77,9 @@ public class DataMovementManager {
   }
 
   public ImportHostBatcher newImportHostBatcher() {
-    return new ImportHostBatcherImpl();
+    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl();
+    if ( client != null ) batcher.setClient(client);
+    return batcher;
   }
 
   public ImportHostBatcher newQueryHostBatcher() {
