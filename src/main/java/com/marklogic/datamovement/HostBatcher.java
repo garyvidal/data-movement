@@ -15,9 +15,11 @@
  */
 package com.marklogic.datamovement;
 
-public interface HostBatcher<T extends HostBatcher> {
-  public T jobName(String jobName);
-  public T batchSize(int batchSize);
-  /* update every <interval> milliseconds */
-  public T forestConfigUpdateInterval(long interval);
+public interface HostBatcher<T extends HostBatcher<T>> {
+  public T withJobName(String jobName);
+  public String getJobName();
+  public T withBatchSize(int batchSize);
+  public int getBatchSize();
+  public T withThreadCount(int threadCount);
+  public int getThreadCount();
 }

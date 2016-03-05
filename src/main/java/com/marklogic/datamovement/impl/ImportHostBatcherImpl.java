@@ -15,61 +15,81 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.BatchListener;
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
+import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.document.DocumentWriteSet;
+import com.marklogic.client.document.ServerTransform;
+import com.marklogic.client.impl.Utilities;
+import com.marklogic.client.io.marker.AbstractWriteHandle;
+import com.marklogic.client.io.marker.ContentHandle;
+import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
+//import com.marklogic.client.io.InputFormatHandle;
 import com.marklogic.datamovement.BatchFailureListener;
-import com.marklogic.datamovement.DataMovementTransform;
-import com.marklogic.datamovement.ImportDefinition.XmlRepairLevel;
+import com.marklogic.datamovement.BatchListener;
+import com.marklogic.datamovement.ForestConfiguration;
 import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.ImportHostBatcher;
 
-import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.document.DocumentDescriptor;
-import com.marklogic.client.document.DocumentWriteOperation;
-import com.marklogic.client.io.marker.AbstractWriteHandle;
-import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
-//import com.marklogic.client.io.InputFormatHandle;
-
-import java.util.LinkedHashSet;
-
 public class ImportHostBatcherImpl
+  extends HostBatcherImpl<ImportHostBatcher>
   implements ImportHostBatcher
 {
+  private long autoFlushInterval;
+  private int transactionSize;
+  private String temporalCollection;
+  private ServerTransform transform;
+  private ForestConfiguration forestConfig;
+  private DatabaseClient client;
+  private DocumentManager<?,?> docMgr;
+  private DocumentWriteSet writeSet;
+
   public ImportHostBatcherImpl() {
     super();
-    // TODO: implement
   }
 
-  public ImportHostBatcher jobName(String jobName) {
-    // TODO: implement
-    return this;
-  }
-
-  public ImportHostBatcher batchSize(int batchSize) {
-    // TODO: implement
-    return this;
-  }
-
-  /* update every <interval> milliseconds */
-  public ImportHostBatcher forestConfigUpdateInterval(long interval) {
-    // TODO: implement
-    return this;
-  }
-
-  /* flush every <interval> milliseconds */
-  public ImportHostBatcher autoFlushInterval(long interval) {
-    // TODO: implement
-    return this;
+  public synchronized void setClient(DatabaseClient client) {
+    if ( client == null ) {
+      throw new IllegalStateException("client must not be null");
+    }
+    if ( this.client != null ) {
+      throw new IllegalStateException("You can only call setClient once per ImportHostBatcher instance");
+    }
+    this.client = client;
+    this.docMgr = client.newDocumentManager();
+    this.writeSet = docMgr.newWriteSet();
   }
 
   public ImportHostBatcher add(String uri, AbstractWriteHandle contentHandle) {
-    // TODO: implement
+    add(uri, null, contentHandle);
     return this;
   }
 
+  public ImportHostBatcher addAs(String uri, Object content) {
+    return addAs(uri, null, content);
+  }
+
   public ImportHostBatcher add(String uri, DocumentMetadataWriteHandle metadataHandle,
-      AbstractWriteHandle contentHandle) {
-    // TODO: implement
+      AbstractWriteHandle contentHandle)
+  {
+    synchronized(this) {
+      writeSet.add(uri, metadataHandle, contentHandle);
+      if ( writeSet.size() >= getBatchSize() ) {
+        // TODO: kick this off in another thread to reduce time spent in this synchronized block
+        docMgr.write(writeSet, getTransform());
+      }
+    }
     return this;
+  }
+
+  public ImportHostBatcher addAs(String uri, DocumentMetadataWriteHandle metadataHandle,
+      Object content) {
+    if (content == null) throw new IllegalArgumentException("content must not be null");
+
+    Class<?> as = content.getClass();
+    ContentHandle<?> handle = DatabaseClientFactory.getHandleRegistry().makeHandle(as);
+    Utilities.setHandleContent(handle, content);
+    return add(uri, metadataHandle, handle);
   }
 
   public ImportHostBatcher onBatchSuccess(BatchListener<ImportEvent> listener) {
@@ -81,54 +101,62 @@ public class ImportHostBatcherImpl
     return this;
   }
 
+  /* flush every <interval> milliseconds */
+  public ImportHostBatcher withAutoFlushInterval(long interval) {
+    // TODO: implement triggering flush() at the specified intervals
+    this.autoFlushInterval = interval;
+    return this;
+  }
+
+  public long getAutoFlushInterval() {
+    return autoFlushInterval;
+  }
+
   /* treat any remaining batches as if they're full and send them to
    * ImportHostBatchFullListener
    */
   public void flush() {
-    // TODO: implement
+    // TODO: write all batches as there will not always be just one
+    docMgr.write(writeSet, getTransform());
   }
 
   public void finalize() {
-    // TODO: implement
+    flush();
   }
 
-  public ImportHostBatcher fastload(boolean fastload) {
-    // TODO: implement
+  public ImportHostBatcher withTransactionSize(int transactionSize) {
+    this.transactionSize = transactionSize;
     return this;
   }
 
-  public ImportHostBatcher transactionSize(int transactionSize) {
-    // TODO: implement
+  public int getTransactionSize() {
+    return transactionSize;
+  }
+
+  public ImportHostBatcher withTemporalCollection(String collection) {
+    this.temporalCollection = collection;
     return this;
   }
 
-  public ImportHostBatcher streaming(boolean streaming) {
-    // TODO: implement
+  public String getTemporalCollection() {
+    return temporalCollection;
+  }
+
+  public ImportHostBatcher withTransform(ServerTransform transform) {
+    this.transform = transform;
     return this;
   }
 
-  public ImportHostBatcher temporalCollection(String collection) {
-    // TODO: implement
+  public ServerTransform getTransform() {
+    return transform;
+  }
+
+  public synchronized ImportHostBatcher withForestConfig(ForestConfiguration forestConfig) {
+    this.forestConfig = forestConfig;
     return this;
   }
 
-  public ImportHostBatcher tolerateErrors(boolean tolerateErrors) {
-    // TODO: implement
-    return this;
-  }
-
-  public ImportHostBatcher transform(DataMovementTransform transform) {
-    // TODO: implement
-    return this;
-  }
-
-  public ImportHostBatcher outputPartition(String partition) {
-    // TODO: implement
-    return this;
-  }
-
-  public ImportHostBatcher xmlRepairLevel(XmlRepairLevel repairLevel) {
-    // TODO: implement
-    return this;
+  public ForestConfiguration getForestConfig() {
+    return forestConfig;
   }
 }
