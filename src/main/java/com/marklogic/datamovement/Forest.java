@@ -22,4 +22,6 @@ public interface Forest {
   public boolean isUpdateable();
   public boolean isDeleteOnly();
   public long getFragmentCount();
+  public void increaseFragmentCount(long numFragments);
+  public void decreaseFragmentCount(long numFragments);
 }
