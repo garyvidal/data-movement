@@ -88,10 +88,8 @@ public class ScenariosTest {
     public OurJbossESBPlugin(DatabaseClient client) {
       moveMgr.setClient(client);
       batcher = moveMgr.newImportHostBatcher()
-        .jobName("OurJbossESBPlugin")
-        .batchSize(BATCH_SIZE)
-        // auto-update every 10 mins
-        .forestConfigUpdateInterval(10 * 60 * 1000)
+        .withJobName("OurJbossESBPlugin")
+        .withBatchSize(BATCH_SIZE)
         // every time a batch is full, write it to the database via mlcp
         // this is the default, only included here to make it obvious
         //.onBatchFull( new MlcpBatchFullListener() )
