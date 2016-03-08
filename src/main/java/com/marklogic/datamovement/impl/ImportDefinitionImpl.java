@@ -87,6 +87,14 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return Format.valueOf(Format.class, docType.toUpperCase());
   }
 
+  public T withFastload(boolean fastload) {
+    return withOption(ConfigConstants.FAST_LOAD, String.valueOf(fastload));
+  }
+
+  public boolean getFastload() {
+    return getBooleanOption(ConfigConstants.FAST_LOAD, false);
+  }
+
   public T withInputCompressed(boolean compressed) {
     return withOption(ConfigConstants.INPUT_COMPRESSED, String.valueOf(compressed));
   }
