@@ -16,6 +16,7 @@
 package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.datamovement.impl.ForestConfigurationImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportHostBatcherImpl;
 import com.marklogic.datamovement.impl.MlcpMovementServices;
@@ -77,7 +78,7 @@ public class DataMovementManager {
   }
 
   public ImportHostBatcher newImportHostBatcher() {
-    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl();
+    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl(new ForestConfigurationImpl());
     if ( client != null ) batcher.setClient(client);
     return batcher;
   }
@@ -130,7 +131,7 @@ public class DataMovementManager {
     return null;
   }
 
-  public ForestConfiguration forestConfig() {
+  public ForestConfiguration readForestConfig() {
     // TODO: implement
     return null;
   }

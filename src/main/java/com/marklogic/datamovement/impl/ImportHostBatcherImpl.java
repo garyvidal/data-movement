@@ -15,10 +15,12 @@
  */
 package com.marklogic.datamovement.impl;
 
+import java.util.HashMap;
+
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
+import com.marklogic.client.Transaction;
 import com.marklogic.client.document.DocumentManager;
-import com.marklogic.client.document.DocumentWriteSet;
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.impl.Utilities;
 import com.marklogic.client.io.marker.AbstractWriteHandle;
@@ -27,6 +29,7 @@ import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
 //import com.marklogic.client.io.InputFormatHandle;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
+import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.ForestConfiguration;
 import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.ImportHostBatcher;
@@ -42,10 +45,11 @@ public class ImportHostBatcherImpl
   private ForestConfiguration forestConfig;
   private DatabaseClient client;
   private DocumentManager<?,?> docMgr;
-  private DocumentWriteSet writeSet;
+  private HashMap<Forest, WriteBatch> batches = new HashMap<>();
 
-  public ImportHostBatcherImpl() {
+  public ImportHostBatcherImpl(ForestConfiguration forestConfig) {
     super();
+    this.forestConfig = forestConfig;
   }
 
   public synchronized void setClient(DatabaseClient client) {
@@ -57,7 +61,6 @@ public class ImportHostBatcherImpl
     }
     this.client = client;
     this.docMgr = client.newDocumentManager();
-    this.writeSet = docMgr.newWriteSet();
   }
 
   public ImportHostBatcher add(String uri, AbstractWriteHandle contentHandle) {
@@ -72,11 +75,13 @@ public class ImportHostBatcherImpl
   public ImportHostBatcher add(String uri, DocumentMetadataWriteHandle metadataHandle,
       AbstractWriteHandle contentHandle)
   {
-    synchronized(this) {
-      writeSet.add(uri, metadataHandle, contentHandle);
-      if ( writeSet.size() >= getBatchSize() ) {
+    Forest forest = assign(uri);
+    synchronized(batches) {
+      WriteBatch writeBatch = getBatch(forest);
+      writeBatch.getWriteSet().add(uri, metadataHandle, contentHandle);
+      if ( writeBatch.getWriteSet().size() >= getBatchSize() ) {
         // TODO: kick this off in another thread to reduce time spent in this synchronized block
-        docMgr.write(writeSet, getTransform());
+        flushBatch(writeBatch);
       }
     }
     return this;
@@ -90,6 +95,19 @@ public class ImportHostBatcherImpl
     ContentHandle<?> handle = DatabaseClientFactory.getHandleRegistry().makeHandle(as);
     Utilities.setHandleContent(handle, content);
     return add(uri, metadataHandle, handle);
+  }
+
+  private Forest assign(String uri) {
+    // TODO: actually get host or forest assignments
+    return forestConfig.assign("default");
+  }
+
+  private WriteBatch getBatch(Forest forest) {
+    WriteBatch batch = batches.get(forest);
+    if ( batch == null ) {
+      batch = initBatch(forest);
+    }
+    return batch;
   }
 
   public ImportHostBatcher onBatchSuccess(BatchListener<ImportEvent> listener) {
@@ -117,7 +135,36 @@ public class ImportHostBatcherImpl
    */
   public void flush() {
     // TODO: write all batches as there will not always be just one
-    docMgr.write(writeSet, getTransform());
+    for ( WriteBatch batch : batches.values() ) {
+      flushBatch(batch);
+    }
+  }
+
+  public void flushBatch(WriteBatch batch) {
+    docMgr.write(batch.getWriteSet(), getTransform(), batch.getTransaction());
+    int batchNumberInTransaction = batch.getBatchNumberInTransaction();
+    if ( batchNumberInTransaction < transactionSize ) {
+      Transaction transaction = batch.getTransaction();
+      Forest forest = batch.getForest();
+      synchronized(batches) {
+        batches.put(forest, new WriteBatch(batchNumberInTransaction++, docMgr, transaction, forest));
+      }
+    }
+  }
+
+  public WriteBatch initBatch(Forest forest) {
+    Transaction transaction = null;
+    if ( transactionSize > 1 ) {
+       transaction = client.openTransaction();
+    }
+    synchronized(batches) {
+      WriteBatch batch = batches.get(forest);
+      if ( batch == null ) {
+        batch = new WriteBatch(1, docMgr, transaction, forest);
+        batches.put(forest, batch);
+      }
+      return batch;
+    }
   }
 
   public void finalize() {

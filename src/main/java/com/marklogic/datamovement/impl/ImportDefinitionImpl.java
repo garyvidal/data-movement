@@ -15,33 +15,20 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.ImportDefinition.AggregatesImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.ArchiveImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.DataType;
-import com.marklogic.datamovement.ImportDefinition.DelimitedJsonImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.DelimitedTextImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.DocumentsImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.ForestImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.RdfImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.SequenceFileImportDefinition;
-import com.marklogic.datamovement.ImportDefinition.SequenceFileImportDefinition.SequenceValueType;
-import com.marklogic.datamovement.ImportDefinition.XmlRepairLevel;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.marklogic.client.io.Format;
+import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
 import com.marklogic.datamovement.DataMovementTransform;
 import com.marklogic.datamovement.ImportDefinition;
 import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.JobTicket;
-import com.marklogic.datamovement.impl.MlcpUtil;
-import com.marklogic.client.io.Format;
-import com.marklogic.contentpump.ConfigConstants;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Function;
 
 public class ImportDefinitionImpl<T extends ImportDefinition<T>>
   extends JobDefinitionImpl<T>
@@ -49,11 +36,11 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
 {
   private ArrayList<String> collections = new ArrayList<>();
   private Map<String,DataType> dataType = new LinkedHashMap<>();
-  private InputFileType inputFileType;
+  private InputFileType<?> inputFileType;
   private ArrayList<String> outputPermissions = new ArrayList<>();
   private ArrayList<String> outputUriReplace = new ArrayList<>();
   private int quality;
-  private DataMovementTransform transform;
+  private DataMovementTransform<?> transform;
   private ImportDefinition.XmlRepairLevel xmlRepairLevel;
   private BatchListener<ImportEvent> onSuccessListener;
   private BatchFailureListener<ImportEvent> onFailureListener;
@@ -138,6 +125,7 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
   }
 
   public String getInputFileTypeValue() {
+    // TODO: why did I leave this unimplemented?
     return null;
   }
 
@@ -243,12 +231,13 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return withOption(ConfigConstants.OUTPUT_PERMISSIONS, String.join(",", outputPermissions));
   }
 
+  @SuppressWarnings("unchecked")
   public T withOutputPermissions(String role, String capability, String... roleCapabilityPairs) {
     withOutputPermissions(role, capability);
     if ( roleCapabilityPairs == null ) return (T) this;
     this.outputPermissions.addAll(Arrays.asList(roleCapabilityPairs));
     return withOption(ConfigConstants.OUTPUT_PERMISSIONS, String.join(",", outputPermissions));
-}
+  }
 
   public String[] getOutputPermissions() {
     return outputPermissions.toArray(new String[outputPermissions.size()]);
@@ -351,11 +340,13 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return xmlRepairLevel;
   }
 
+  @SuppressWarnings("unchecked")
   public T onBatchSuccess(BatchListener<ImportEvent> listener) {
     this.onSuccessListener = listener;
     return (T) this;
   }
 
+  @SuppressWarnings("unchecked")
   public T onBatchFailure(BatchFailureListener<ImportEvent> listener) {
     this.onFailureListener = listener;
     return (T) this;

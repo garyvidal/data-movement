@@ -15,12 +15,12 @@
  */
 package com.marklogic.datamovement;
 
-import java.util.Date;
+import java.util.Calendar;
 
 public interface Batch<T> {
   public long getBatchNumber();
   public T[] getItems();
-  public Date getTimestamp();
+  public Calendar getTimestamp();
   public Forest getForest();
   public long getBytesMoved();
   public JobTicket getJobTicket();

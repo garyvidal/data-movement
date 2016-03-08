@@ -34,7 +34,6 @@ import com.marklogic.client.document.DocumentRecord;
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.FileHandle;
-import com.marklogic.client.query.DeleteQueryDefinition;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.datamovement.DataMovementManager;
@@ -53,7 +52,6 @@ public class ImportHostBatcherTest {
 
   @BeforeClass
   public static void beforeClass() {
-    System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "debug");
     installModule();
   }
 
@@ -81,6 +79,7 @@ public class ImportHostBatcherTest {
         new ServerTransform(transform)
           .addParameter("newValue", "test2")
       );
+    JobTicket ticket = moveMgr.startJob(batcher);
 
     DocumentMetadataHandle meta = new DocumentMetadataHandle()
       .withCollections(collection);
@@ -88,7 +87,7 @@ public class ImportHostBatcherTest {
     JsonNode doc2 = new ObjectMapper().readTree("{ \"testProperty2\": \"test2\" }");
     batcher.addAs(uri1, meta, doc1);
     batcher.addAs(uri2, meta, doc2);
-    JobTicket ticket = moveMgr.startJob(batcher);
+    batcher.flush();
 
     QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     DocumentPage docs = docMgr.search(query, 1);
@@ -97,7 +96,7 @@ public class ImportHostBatcherTest {
     for (DocumentRecord record : docs ) {
       if ( uri1.equals(record.getUri()) ) {
         assertEquals( "the transform should have changed testProperty to 'test2'",
-          record.getContentAs(JsonNode.class).get("testProperty").textValue(), "test2" );
+          "test2", record.getContentAs(JsonNode.class).get("testProperty").textValue() );
       }
     }
   }
