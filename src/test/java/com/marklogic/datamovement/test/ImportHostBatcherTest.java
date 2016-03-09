@@ -16,6 +16,7 @@
 package com.marklogic.datamovement.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -34,11 +35,14 @@ import com.marklogic.client.document.DocumentRecord;
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.FileHandle;
+import com.marklogic.client.io.StringHandle;
+import com.marklogic.client.io.Format;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.ImportHostBatcher;
 import com.marklogic.datamovement.JobTicket;
+import com.marklogic.datamovement.WriteEvent;
 
 public class ImportHostBatcherTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
@@ -47,6 +51,7 @@ public class ImportHostBatcherTest {
   private static DocumentManager<?,?> docMgr = client.newDocumentManager();
   private static String uri1 = "ImportHostBatcherTest_content_1.txt";
   private static String uri2 = "ImportHostBatcherTest_content_2.txt";
+  private static String uri3 = "ImportHostBatcherTest_content_3.txt";
   private static String collection = "ImportHostBatcherTest";
   private static String transform = "ImportHostBatcherTest_transform.sjs";
 
@@ -57,7 +62,7 @@ public class ImportHostBatcherTest {
 
   @AfterClass
   public static void afterClass() {
-    docMgr.delete(uri1, uri2);
+    docMgr.delete(uri1, uri2, uri3);
     client.release();
   }
 
@@ -73,11 +78,25 @@ public class ImportHostBatcherTest {
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
       null, docMgr.exists(uri1) );
 
+    final StringBuffer successListenerWasRun = new StringBuffer();
+    final StringBuffer failListenerWasRun = new StringBuffer();
     ImportHostBatcher batcher = moveMgr.newImportHostBatcher()
       .withBatchSize(2)
       .withTransform(
         new ServerTransform(transform)
           .addParameter("newValue", "test2")
+      )
+      .onBatchSuccess(
+        (client, batch) -> {
+          successListenerWasRun.append("true");
+          assertEquals("There should be two items in the batch", 2, batch.getItems().length);
+        }
+      )
+      .onBatchFailure(
+        (client, batch, throwable) -> {
+          failListenerWasRun.append("true");
+          assertEquals("There should be one item in the batch", 1, batch.getItems().length);
+        }
       );
     JobTicket ticket = moveMgr.startJob(batcher);
 
@@ -85,9 +104,14 @@ public class ImportHostBatcherTest {
       .withCollections(collection);
     JsonNode doc1 = new ObjectMapper().readTree("{ \"testProperty\": \"test1\" }");
     JsonNode doc2 = new ObjectMapper().readTree("{ \"testProperty2\": \"test2\" }");
+    StringHandle doc3 = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
+      .withFormat(Format.JSON);
     batcher.addAs(uri1, meta, doc1);
     batcher.addAs(uri2, meta, doc2);
+    batcher.add(uri3, meta, doc3);
     batcher.flush();
+    assertEquals("The listner should have run", "true", successListenerWasRun.toString());
+    assertEquals("The listner should have run", "true", failListenerWasRun.toString());
 
     QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     DocumentPage docs = docMgr.search(query, 1);
@@ -101,5 +125,3 @@ public class ImportHostBatcherTest {
     }
   }
 }
-
-

@@ -26,8 +26,8 @@ public interface ImportHostBatcher extends HostBatcher<ImportHostBatcher> {
       AbstractWriteHandle contentHandle);
   public ImportHostBatcher addAs(String uri, DocumentMetadataWriteHandle metadataHandle,
       Object content);
-  public ImportHostBatcher onBatchSuccess(BatchListener<ImportEvent> listener);
-  public ImportHostBatcher onBatchFailure(BatchFailureListener<ImportEvent> listener);
+  public ImportHostBatcher onBatchSuccess(BatchListener<WriteEvent> listener);
+  public ImportHostBatcher onBatchFailure(BatchFailureListener<WriteEvent> listener);
 
   /** Treat any remaining batches as if they're full and send them */
   public void flush();

@@ -15,20 +15,7 @@
  */
 package com.marklogic.datamovement;
 
-import java.util.Calendar;
-
-public interface Batch<T> {
-  public long getBatchNumber();
-  public Batch<T> withBatchNumber(long batchNumber);
-  public T[] getItems();
-  @SuppressWarnings("unchecked")
-  public Batch<T> withItems(T... items);
-  public Calendar getTimestamp();
-  public Batch<T> withTimestamp(Calendar timestamp);
-  public Forest getForest();
-  public Batch<T> withForest(Forest forest);
-  public long getBytesMoved();
-  public Batch<T> withBytesMoved(long bytesMoved);
-  public JobTicket getJobTicket();
-  public Batch<T> withJobTicket(JobTicket ticket);
+public interface WriteEvent extends DataMovementEvent {
+  public String getTargetUri();
+  public WriteEvent withTargetUri(String targetUri);
 }

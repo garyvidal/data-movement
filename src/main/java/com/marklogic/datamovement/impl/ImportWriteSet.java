@@ -18,15 +18,33 @@ package com.marklogic.datamovement.impl;
 import com.marklogic.client.Transaction;
 import com.marklogic.client.document.DocumentManager;
 import com.marklogic.client.document.DocumentWriteSet;
+import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.Forest;
+import com.marklogic.datamovement.WriteEvent;
 
-public class WriteBatch {
+public class ImportWriteSet {
   private DocumentWriteSet writeSet;
   private Transaction transaction;
   private int batchNumberInTransaction;
   private Forest forest;
 
-  public WriteBatch(int batchNumberInTransaction, DocumentManager<?,?> docMgr,
+  public static class WriteEventImpl 
+    extends DataMovementEventImpl<WriteEventImpl>
+    implements WriteEvent
+  {
+    private String targetUri;
+
+    public String getTargetUri() {
+      return targetUri;
+    }
+
+    public WriteEventImpl withTargetUri(String targetUri) {
+      this.targetUri = targetUri;
+      return this;
+    }
+  }
+
+  public ImportWriteSet(int batchNumberInTransaction, DocumentManager<?,?> docMgr,
     Transaction transaction, Forest forest)
   {
     this.batchNumberInTransaction = batchNumberInTransaction;
@@ -65,5 +83,14 @@ public class WriteBatch {
 
   public void setForest(Forest forest) {
     this.forest = forest;
+  }
+
+  public Batch<WriteEvent> getBatchOfWriteEvents() {
+    Batch<WriteEvent> batch = new BatchImpl<WriteEvent>();
+    WriteEvent[] writeEvents = getWriteSet().stream()
+            .map(writeOperation ->  new WriteEventImpl().withTargetUri(writeOperation.getUri()))
+            .toArray(WriteEventImpl[]::new);
+    batch.withItems(writeEvents);
+    return batch;
   }
 }

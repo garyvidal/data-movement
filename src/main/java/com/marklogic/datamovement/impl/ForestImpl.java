@@ -80,4 +80,19 @@ public class ForestImpl implements Forest {
   public void decreaseFragmentCount(long numFragments) {
     this.fragmentCount -= numFragments;
   }
+
+  public boolean equals(Object obj) {
+    if ( obj == null ) return false;
+    if ( ! (obj instanceof ForestImpl) ) return false;
+    ForestImpl forestObj = (ForestImpl) obj;
+    return getHostName()     == forestObj.getHostName() &&
+           getDatabaseName() == forestObj.getDatabaseName() &&
+           getForestName()   == forestObj.getForestName();
+  }
+
+  public int hashCode() {
+    return (getHostName() != null ? getHostName().hashCode()     : 0) ^
+      (getDatabaseName()  != null ? getDatabaseName().hashCode() : 0) ^
+      (getForestName()    != null ? getForestName().hashCode()   : 0);
+  }
 }

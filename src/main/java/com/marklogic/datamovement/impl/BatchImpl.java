@@ -34,47 +34,53 @@ public class BatchImpl<T extends DataMovementEvent> implements Batch<T> {
         return batchNumber;
     }
 
-    public void setBatchNumber(long batchNumber) {
+    public Batch<T> withBatchNumber(long batchNumber) {
         this.batchNumber = batchNumber;
+        return this;
     }
 
     public T[] getItems() {
         return items;
     }
 
-    public void setItems(T[] items) {
+    public Batch<T> withItems(T[] items) {
         this.items = items;
+        return this;
     }
 
     public Calendar getTimestamp() {
         return timestamp;
     }
 
-    public void setTimestamp(Calendar timestamp) {
+    public Batch<T> withTimestamp(Calendar timestamp) {
         this.timestamp = timestamp;
+        return this;
     }
 
     public Forest getForest() {
         return forest;
     }
 
-    public void setForest(Forest forest) {
+    public Batch<T> withForest(Forest forest) {
         this.forest = forest;
+        return this;
     }
 
     public long getBytesMoved() {
         return bytesMoved;
     }
 
-    public void setBytesMoved(long bytesMoved) {
+    public Batch<T> withBytesMoved(long bytesMoved) {
         this.bytesMoved = bytesMoved;
+        return this;
     }
 
     public JobTicket getJobTicket() {
         return jobTicket;
     }
 
-    public void setJobTicket(JobTicket jobTicket) {
+    public Batch<T> withJobTicket(JobTicket jobTicket) {
         this.jobTicket = jobTicket;
+        return this;
     }
 }

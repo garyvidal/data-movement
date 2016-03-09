@@ -15,24 +15,26 @@
  */
 package com.marklogic.datamovement.impl;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.Transaction;
-import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.document.XMLDocumentManager;
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.impl.Utilities;
 import com.marklogic.client.io.marker.AbstractWriteHandle;
 import com.marklogic.client.io.marker.ContentHandle;
 import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
-//import com.marklogic.client.io.InputFormatHandle;
+import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.ForestConfiguration;
 import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.ImportHostBatcher;
+import com.marklogic.datamovement.WriteEvent;
 
 public class ImportHostBatcherImpl
   extends HostBatcherImpl<ImportHostBatcher>
@@ -44,8 +46,10 @@ public class ImportHostBatcherImpl
   private ServerTransform transform;
   private ForestConfiguration forestConfig;
   private DatabaseClient client;
-  private DocumentManager<?,?> docMgr;
-  private HashMap<Forest, WriteBatch> batches = new HashMap<>();
+  private XMLDocumentManager docMgr;
+  private HashMap<Forest, ImportWriteSet> writeSets = new HashMap<>();
+  private ArrayList<BatchListener<WriteEvent>> successListeners = new ArrayList<>();
+  private ArrayList<BatchFailureListener<WriteEvent>> failureListeners = new ArrayList<>();
 
   public ImportHostBatcherImpl(ForestConfiguration forestConfig) {
     super();
@@ -60,7 +64,12 @@ public class ImportHostBatcherImpl
       throw new IllegalStateException("You can only call setClient once per ImportHostBatcher instance");
     }
     this.client = client;
-    this.docMgr = client.newDocumentManager();
+    // use XMLDocumentManager because it can use temporalCollection
+    this.docMgr = client.newXMLDocumentManager();
+  }
+
+  public DatabaseClient getClient() {
+    return client;
   }
 
   public ImportHostBatcher add(String uri, AbstractWriteHandle contentHandle) {
@@ -76,12 +85,12 @@ public class ImportHostBatcherImpl
       AbstractWriteHandle contentHandle)
   {
     Forest forest = assign(uri);
-    synchronized(batches) {
-      WriteBatch writeBatch = getBatch(forest);
-      writeBatch.getWriteSet().add(uri, metadataHandle, contentHandle);
-      if ( writeBatch.getWriteSet().size() >= getBatchSize() ) {
+    synchronized(writeSets) {
+      ImportWriteSet writeSet = getBatch(forest);
+      writeSet.getWriteSet().add(uri, metadataHandle, contentHandle);
+      if ( writeSet.getWriteSet().size() >= getBatchSize() ) {
         // TODO: kick this off in another thread to reduce time spent in this synchronized block
-        flushBatch(writeBatch);
+        flushBatch(writeSet);
       }
     }
     return this;
@@ -102,20 +111,20 @@ public class ImportHostBatcherImpl
     return forestConfig.assign("default");
   }
 
-  private WriteBatch getBatch(Forest forest) {
-    WriteBatch batch = batches.get(forest);
-    if ( batch == null ) {
-      batch = initBatch(forest);
+  private ImportWriteSet getBatch(Forest forest) {
+    ImportWriteSet writeSet = writeSets.get(forest);
+    if ( writeSet == null ) {
+      writeSet = initBatch(forest);
     }
-    return batch;
+    return writeSet;
   }
 
-  public ImportHostBatcher onBatchSuccess(BatchListener<ImportEvent> listener) {
-    // TODO: implement
+  public ImportHostBatcher onBatchSuccess(BatchListener<WriteEvent> listener) {
+    successListeners.add(listener);
     return this;
   }
-  public ImportHostBatcher onBatchFailure(BatchFailureListener<ImportEvent> listener) {
-    // TODO: implement
+  public ImportHostBatcher onBatchFailure(BatchFailureListener<WriteEvent> listener) {
+    failureListeners.add(listener);
     return this;
   }
 
@@ -130,40 +139,55 @@ public class ImportHostBatcherImpl
     return autoFlushInterval;
   }
 
-  /* treat any remaining batches as if they're full and send them to
+  /* treat any remaining writeSets as if they're full and send them to
    * ImportHostBatchFullListener
    */
   public void flush() {
-    // TODO: write all batches as there will not always be just one
-    for ( WriteBatch batch : batches.values() ) {
-      flushBatch(batch);
+    for ( ImportWriteSet writeSet : writeSets.values() ) {
+System.out.println("DEBUG: [ImportHostBatcherImpl] writeSet.getWriteSet().size()=[" + writeSet.getWriteSet().size() + "]");
+      flushBatch(writeSet);
     }
   }
 
-  public void flushBatch(WriteBatch batch) {
-    docMgr.write(batch.getWriteSet(), getTransform(), batch.getTransaction());
-    int batchNumberInTransaction = batch.getBatchNumberInTransaction();
-    if ( batchNumberInTransaction < transactionSize ) {
-      Transaction transaction = batch.getTransaction();
-      Forest forest = batch.getForest();
-      synchronized(batches) {
-        batches.put(forest, new WriteBatch(batchNumberInTransaction++, docMgr, transaction, forest));
+  public void flushBatch(ImportWriteSet writeSet) {
+    Transaction transaction = writeSet.getTransaction();
+    try {
+      docMgr.write(writeSet.getWriteSet(), getTransform(), transaction, getTemporalCollection());
+      int batchNumberInTransaction = writeSet.getBatchNumberInTransaction();
+      Forest forest = writeSet.getForest();
+      if ( batchNumberInTransaction >= getTransactionSize() ) {
+        synchronized(writeSets) {
+          writeSets.remove(forest);
+        }
+        if ( transaction != null ) transaction.commit();
+        for ( BatchListener<WriteEvent> successListener : successListeners ) {
+          successListener.processEvent(getClient(), writeSet.getBatchOfWriteEvents());
+        }
+      } else {
+        synchronized(writeSets) {
+          writeSets.put(forest, new ImportWriteSet(batchNumberInTransaction++, docMgr, transaction, forest));
+        }
+      }
+    } catch (Throwable t) {
+      Batch<WriteEvent> batch = writeSet.getBatchOfWriteEvents();
+      for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
+        failureListener.processEvent(getClient(), batch, t);
       }
     }
   }
 
-  public WriteBatch initBatch(Forest forest) {
+  public ImportWriteSet initBatch(Forest forest) {
     Transaction transaction = null;
     if ( transactionSize > 1 ) {
        transaction = client.openTransaction();
     }
-    synchronized(batches) {
-      WriteBatch batch = batches.get(forest);
-      if ( batch == null ) {
-        batch = new WriteBatch(1, docMgr, transaction, forest);
-        batches.put(forest, batch);
+    synchronized(writeSets) {
+      ImportWriteSet writeSet = writeSets.get(forest);
+      if ( writeSet == null ) {
+        writeSet = new ImportWriteSet(1, docMgr, transaction, forest);
+        writeSets.put(forest, writeSet);
       }
-      return batch;
+      return writeSet;
     }
   }
 

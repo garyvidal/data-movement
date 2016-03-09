@@ -15,7 +15,7 @@
  */
 package com.marklogic.datamovement.impl;
 
-public class DataMovementEventImpl {
+public class DataMovementEventImpl<T extends DataMovementEventImpl<T>> {
   private String targetUri;
   private long bytesMoved;
   private long jobRecordNumber;
@@ -27,35 +27,39 @@ public class DataMovementEventImpl {
     return targetUri;
   }
 
-  public DataMovementEventImpl withTargetUri(String targetUri) {
+  @SuppressWarnings("unchecked")
+  public T withTargetUri(String targetUri) {
     this.targetUri = targetUri;
-    return this;
+    return (T) this;
   }
 
   public long getBytesMoved() {
     return bytesMoved;
   }
 
-  public DataMovementEventImpl withBytesMoved(long bytesMoved) {
+  @SuppressWarnings("unchecked")
+  public T withBytesMoved(long bytesMoved) {
     this.bytesMoved = bytesMoved;
-    return this;
+    return (T) this;
   }
 
   public long getJobRecordNumber() {
     return jobRecordNumber;
   }
 
-  public DataMovementEventImpl withJobRecordNumber(long jobRecordNumber) {
+  @SuppressWarnings("unchecked")
+  public T withJobRecordNumber(long jobRecordNumber) {
     this.jobRecordNumber = jobRecordNumber;
-    return this;
+    return (T)  this;
   }
 
   public long getBatchRecordNumber() {
     return batchRecordNumber;
   }
 
-  public DataMovementEventImpl withBatchRecordNumber(long batchRecordNumber) {
+  @SuppressWarnings("unchecked")
+  public T withBatchRecordNumber(long batchRecordNumber) {
     this.batchRecordNumber = batchRecordNumber;
-    return this;
+    return (T) this;
   }
 }
