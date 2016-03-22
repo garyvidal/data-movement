@@ -19,10 +19,10 @@ import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.query.CtsQueryDefinition;
 import com.marklogic.datamovement.impl.ForestConfigurationImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
-import com.marklogic.datamovement.impl.ImportHostBatcherImpl;
 import com.marklogic.datamovement.impl.QueryHostBatcherImpl;
 import com.marklogic.datamovement.impl.DataMovementServices;
 import com.marklogic.datamovement.impl.ModuleTransformImpl;
+import com.marklogic.datamovement.impl.WriteHostBatcherImpl;
 
 public class DataMovementManager {
   private DatabaseClient client;
@@ -63,7 +63,7 @@ public class DataMovementManager {
     return service.startJob(def);
   }
 
-  public JobTicket startJob(ImportHostBatcher batcher) {
+  public JobTicket startJob(WriteHostBatcher batcher) {
     return service.startJob(batcher);
   }
 
@@ -79,9 +79,9 @@ public class DataMovementManager {
     service.stopJob(ticket);
   }
 
-  public ImportHostBatcher newImportHostBatcher() {
+  public WriteHostBatcher newWriteHostBatcher() {
     verifyClientIsSet("newImportHostBatcher");
-    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl(getForestConfig());
+    WriteHostBatcherImpl batcher = new WriteHostBatcherImpl(getForestConfig());
     if ( client != null ) batcher.setClient(client);
     return batcher;
   }

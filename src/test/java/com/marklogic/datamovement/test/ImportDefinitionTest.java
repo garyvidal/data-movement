@@ -29,6 +29,7 @@ import com.marklogic.datamovement.ImportDefinition.DataType;
 import com.marklogic.datamovement.ImportDefinition.DelimitedJsonImportDefinition;
 import com.marklogic.datamovement.ImportDefinition.InputFileType;
 import com.marklogic.datamovement.ImportDefinition.SequenceFileImportDefinition.SequenceValueType;
+import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl.DelimitedJsonImportDefinitionImpl;
@@ -137,7 +138,7 @@ public class ImportDefinitionTest {
     def.withXmlRepairLevel(ImportDefinitionImpl.XmlRepairLevel.DEFAULT);
     expectedMlcpParams.add("-" + ConfigConstants.XML_REPAIR_LEVEL); expectedMlcpParams.add("default");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -153,7 +154,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.AGGREGATE_RECORD_ELEMENT); expectedMlcpParams.add("products");
     expectedMlcpParams.add("-" + ConfigConstants.AGGREGATE_RECORD_NAMESPACE); expectedMlcpParams.add("http://mycompany.com");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
 /*

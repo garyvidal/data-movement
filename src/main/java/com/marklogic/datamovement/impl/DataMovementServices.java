@@ -21,13 +21,13 @@ import com.marklogic.datamovement.DataMovementException;
 import com.marklogic.datamovement.DeleteDefinition;
 import com.marklogic.datamovement.ExportDefinition;
 import com.marklogic.datamovement.ImportDefinition;
-import com.marklogic.datamovement.ImportHostBatcher;
 import com.marklogic.datamovement.JobDefinition;
 import com.marklogic.datamovement.JobReport;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.datamovement.UpdateDefinition;
+import com.marklogic.datamovement.WriteHostBatcher;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.eval.EvalResult;
 import com.marklogic.client.eval.EvalResultIterator;
@@ -99,7 +99,7 @@ public class DataMovementServices {
     return null;
   }
 
-  public JobTicket startJob(ImportHostBatcher batcher) {
+  public JobTicket startJob(WriteHostBatcher batcher) {
     // TODO: implement job tracking
     return new JobTicketImpl(generateJobId(), JobTicket.JobType.IMPORT_HOST_BATCHER);
   }

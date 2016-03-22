@@ -21,12 +21,14 @@ import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.ImportEvent;
 import com.marklogic.datamovement.JobReport;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportHostBatcher;
 import com.marklogic.datamovement.JobTicket;
-
+import com.marklogic.datamovement.WriteEvent;
+import com.marklogic.datamovement.WriteHostBatcher;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
+
 import static com.marklogic.client.DatabaseClientFactory.Authentication.BASIC;
+
 import com.marklogic.client.io.DOMHandle;
 
 import org.w3c.dom.Document;
@@ -82,12 +84,12 @@ public class ScenariosTest {
     private int BATCH_SIZE = 1;
     private DataMovementManager moveMgr = DataMovementManager.newInstance();
     private JobTicket ticket;
-    private ImportHostBatcher batcher;
+    private WriteHostBatcher batcher;
     private Logger logger = Logger.getLogger(this.getClass().getName());
 
     public OurJbossESBPlugin(DatabaseClient client) {
       moveMgr.setClient(client);
-      batcher = moveMgr.newImportHostBatcher()
+      batcher = moveMgr.newWriteHostBatcher()
         .withJobName("OurJbossESBPlugin")
         .withBatchSize(BATCH_SIZE)
         // every time a batch is full, write it to the database via mlcp
@@ -98,7 +100,7 @@ public class ScenariosTest {
         .onBatchFailure(
             (hostClient, batch, throwable) -> {
             ArrayList<String> uris = new ArrayList<String>();
-            for ( ImportEvent event : batch.getItems() ) {
+            for ( WriteEvent event : batch.getItems() ) {
             uris.add(event.getTargetUri());
             }
             logger.log(Level.WARNING, "FAILURE on batch:" + uris + "\n",

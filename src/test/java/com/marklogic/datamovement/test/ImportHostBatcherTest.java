@@ -40,9 +40,9 @@ import com.marklogic.client.io.Format;
 import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportHostBatcher;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.WriteEvent;
+import com.marklogic.datamovement.WriteHostBatcher;
 
 public class ImportHostBatcherTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
@@ -80,7 +80,7 @@ public class ImportHostBatcherTest {
 
     final StringBuffer successListenerWasRun = new StringBuffer();
     final StringBuffer failListenerWasRun = new StringBuffer();
-    ImportHostBatcher batcher = moveMgr.newImportHostBatcher()
+    WriteHostBatcher batcher = moveMgr.newWriteHostBatcher()
       .withBatchSize(2)
       .withTransform(
         new ServerTransform(transform)

@@ -19,33 +19,33 @@ import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.marker.AbstractWriteHandle;
 import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
 
-public interface ImportHostBatcher extends HostBatcher<ImportHostBatcher> {
-  public ImportHostBatcher add(String uri, AbstractWriteHandle contentHandle);
-  public ImportHostBatcher addAs(String uri, Object content);
-  public ImportHostBatcher add(String uri, DocumentMetadataWriteHandle metadataHandle,
+public interface WriteHostBatcher extends HostBatcher<WriteHostBatcher> {
+  public WriteHostBatcher add(String uri, AbstractWriteHandle contentHandle);
+  public WriteHostBatcher addAs(String uri, Object content);
+  public WriteHostBatcher add(String uri, DocumentMetadataWriteHandle metadataHandle,
       AbstractWriteHandle contentHandle);
-  public ImportHostBatcher addAs(String uri, DocumentMetadataWriteHandle metadataHandle,
+  public WriteHostBatcher addAs(String uri, DocumentMetadataWriteHandle metadataHandle,
       Object content);
-  public ImportHostBatcher onBatchSuccess(BatchListener<WriteEvent> listener);
-  public ImportHostBatcher onBatchFailure(BatchFailureListener<WriteEvent> listener);
+  public WriteHostBatcher onBatchSuccess(BatchListener<WriteEvent> listener);
+  public WriteHostBatcher onBatchFailure(BatchFailureListener<WriteEvent> listener);
 
   /** Treat any remaining batches as if they're full and send them */
   public void flush();
   public void finalize(); // calls flush()
 
   /** Flush every <interval> milliseconds */
-  public ImportHostBatcher withAutoFlushInterval(long interval);
+  public WriteHostBatcher withAutoFlushInterval(long interval);
   public long getAutoFlushInterval();
 
-  public ImportHostBatcher withTransactionSize(int transactionSize);
+  public WriteHostBatcher withTransactionSize(int transactionSize);
   public int getTransactionSize();
 
-  public ImportHostBatcher withTemporalCollection(String collection);
+  public WriteHostBatcher withTemporalCollection(String collection);
   public String getTemporalCollection();
 
-  public ImportHostBatcher withTransform(ServerTransform transform);
+  public WriteHostBatcher withTransform(ServerTransform transform);
   public ServerTransform getTransform();
 
-  public ImportHostBatcher withForestConfig(ForestConfiguration forestConfig);
+  public WriteHostBatcher withForestConfig(ForestConfiguration forestConfig);
   public ForestConfiguration getForestConfig();
 }

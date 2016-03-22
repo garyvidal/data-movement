@@ -22,7 +22,7 @@ import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.WriteEvent;
 
-public class ImportWriteSet {
+public class BatchWriteSet {
   private DocumentWriteSet writeSet;
   private Transaction transaction;
   private int batchNumberInTransaction;
@@ -44,7 +44,7 @@ public class ImportWriteSet {
     }
   }
 
-  public ImportWriteSet(int batchNumberInTransaction, DocumentManager<?,?> docMgr,
+  public BatchWriteSet(int batchNumberInTransaction, DocumentManager<?,?> docMgr,
     Transaction transaction, Forest forest)
   {
     this.batchNumberInTransaction = batchNumberInTransaction;
