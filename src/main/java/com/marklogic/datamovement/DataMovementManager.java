@@ -16,16 +16,18 @@
 package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.query.CtsQueryDefinition;
 import com.marklogic.datamovement.impl.ForestConfigurationImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportHostBatcherImpl;
-import com.marklogic.datamovement.impl.MlcpMovementServices;
+import com.marklogic.datamovement.impl.QueryHostBatcherImpl;
 import com.marklogic.datamovement.impl.DataMovementServices;
 import com.marklogic.datamovement.impl.ModuleTransformImpl;
 
 public class DataMovementManager {
   private DatabaseClient client;
-  private DataMovementServices service = new MlcpMovementServices();
+  private DataMovementServices service = new DataMovementServices();
+  private ForestConfiguration forestConfig;
 
   private DataMovementManager() {
     // TODO: implement
@@ -78,15 +80,17 @@ public class DataMovementManager {
   }
 
   public ImportHostBatcher newImportHostBatcher() {
-    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl(new ForestConfigurationImpl());
+    verifyClientIsSet("newImportHostBatcher");
+    ImportHostBatcherImpl batcher = new ImportHostBatcherImpl(getForestConfig());
     if ( client != null ) batcher.setClient(client);
     return batcher;
   }
 
-  public ImportHostBatcher newQueryHostBatcher() {
-    //return new QueryHostBatcherImpl();
-    // TODO: implement
-    return null;
+  public QueryHostBatcher newQueryHostBatcher(CtsQueryDefinition query) {
+    verifyClientIsSet("newQueryHostBatcher");
+    QueryHostBatcherImpl batcher = new QueryHostBatcherImpl(query, getForestConfig());
+    if ( client != null ) batcher.setClient(client);
+    return batcher;
   }
 
   public ImportDefinition<?> newImportDefinition() {
@@ -131,8 +135,19 @@ public class DataMovementManager {
     return null;
   }
 
+  private ForestConfiguration getForestConfig() {
+    if ( forestConfig != null ) return forestConfig;
+    return readForestConfig();
+  }
+
   public ForestConfiguration readForestConfig() {
-    // TODO: implement
-    return null;
+    verifyClientIsSet("readForestConfig");
+    forestConfig = service.readForestConfig();
+    return forestConfig;
+  }
+
+  private void verifyClientIsSet(String method) {
+    if ( client == null ) throw new IllegalStateException("The method " + method +
+      " cannot be called without first calling setClient()");
   }
 }

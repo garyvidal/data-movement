@@ -360,16 +360,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return (T) this;
   }
 
-  public List<String> getMlcpArgs() {
-    ArrayList<String> args = new ArrayList<String>();
-    args.add(JobTicket.JobType.IMPORT.toString());
-    Map<String, String> options = getOptions();
-    for ( String name: options.keySet() ) {
-      args.add( "-" + name ); args.add( options.get(name) );
-    }
-    return args;
-  }
-
   public class AggregatesImportDefinitionImpl
     extends ImportDefinitionImpl<AggregatesImportDefinition>
     implements AggregatesImportDefinition

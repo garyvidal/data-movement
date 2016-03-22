@@ -19,6 +19,7 @@ public interface Forest {
   public String getHostName();
   public String getDatabaseName();
   public String getForestName();
+  public String getForestId();
   public boolean isUpdateable();
   public boolean isDeleteOnly();
   public long getFragmentCount();

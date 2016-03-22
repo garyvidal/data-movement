@@ -45,7 +45,6 @@ public class ImportHostBatcherImpl
   private String temporalCollection;
   private ServerTransform transform;
   private ForestConfiguration forestConfig;
-  private DatabaseClient client;
   private XMLDocumentManager docMgr;
   private HashMap<Forest, ImportWriteSet> writeSets = new HashMap<>();
   private ArrayList<BatchListener<WriteEvent>> successListeners = new ArrayList<>();
@@ -57,19 +56,9 @@ public class ImportHostBatcherImpl
   }
 
   public synchronized void setClient(DatabaseClient client) {
-    if ( client == null ) {
-      throw new IllegalStateException("client must not be null");
-    }
-    if ( this.client != null ) {
-      throw new IllegalStateException("You can only call setClient once per ImportHostBatcher instance");
-    }
-    this.client = client;
+    super.setClient(client);
     // use XMLDocumentManager because it can use temporalCollection
-    this.docMgr = client.newXMLDocumentManager();
-  }
-
-  public DatabaseClient getClient() {
-    return client;
+    this.docMgr = getClient().newXMLDocumentManager();
   }
 
   public ImportHostBatcher add(String uri, AbstractWriteHandle contentHandle) {
@@ -179,7 +168,7 @@ System.out.println("DEBUG: [ImportHostBatcherImpl] writeSet.getWriteSet().size()
   public ImportWriteSet initBatch(Forest forest) {
     Transaction transaction = null;
     if ( transactionSize > 1 ) {
-       transaction = client.openTransaction();
+       transaction = getClient().openTransaction();
     }
     synchronized(writeSets) {
       ImportWriteSet writeSet = writeSets.get(forest);

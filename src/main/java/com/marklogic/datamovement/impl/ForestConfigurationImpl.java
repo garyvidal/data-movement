@@ -15,45 +15,33 @@
  */
 package com.marklogic.datamovement.impl;
 
+import java.util.Random;
+
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.datamovement.Forest;
-import com.marklogic.datamovement.ForestConfigChangeListener;
 import com.marklogic.datamovement.ForestConfiguration;
 
 public class ForestConfigurationImpl implements ForestConfiguration {
-  private long updateInterval;
+  private Forest[] forests;
   private AssignmentPolicy assignmentPolicy;
 
-  public ForestConfigurationImpl() {
+  public ForestConfigurationImpl(Forest[] forests) {
+    this.forests = forests;
   }
 
   public Forest[] listForests() {
-    return new Forest[] {
-      new ForestImpl()
-    };
+    return forests;
   }
 
   public Forest assign(String uri) {
-    return new ForestImpl();
+    // TODO: replace this random with real forest assignment
+    int forestIdx = new Random().nextInt(forests.length);
+    return forests[forestIdx];
   }
 
   public DatabaseClient getForestClient(Forest forest) {
     // TODO: implement
     return null;
-  }
-
-  public ForestConfiguration onConfigChange(ForestConfigChangeListener listener) {
-    // TODO: implement
-    return null;
-  }
-
-  public long getUpdateInterval() {
-    return updateInterval;
-  }
-
-  public ForestConfigurationImpl setUpdateInterval(long interval) {
-    this.updateInterval = interval;
-    return this;
   }
 
   public AssignmentPolicy getAssignmentPolicy() {

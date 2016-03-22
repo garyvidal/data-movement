@@ -21,9 +21,17 @@ public class ForestImpl implements Forest {
   private String hostName;
   private String databaseName;
   private String forestName;
+  private String forestId;
   private boolean isUpdateable;
   private boolean isDeleteOnly;
   private long fragmentCount;
+
+  public ForestImpl(String hostName, String databaseName, String forestName, String forestId) {
+    this.hostName = hostName;
+    this.databaseName = databaseName;
+    this.forestName = forestName;
+    this.forestId = forestId;
+  }
 
   public String getHostName() {
     return hostName;
@@ -47,6 +55,14 @@ public class ForestImpl implements Forest {
 
   public void setForestName(String forestName) {
     this.forestName = forestName;
+  }
+
+  public String getForestId() {
+    return forestId;
+  }
+
+  public void setForestId(String forestId) {
+    this.forestId = forestId;
   }
 
   public boolean isUpdateable() {
@@ -87,12 +103,12 @@ public class ForestImpl implements Forest {
     ForestImpl forestObj = (ForestImpl) obj;
     return getHostName()     == forestObj.getHostName() &&
            getDatabaseName() == forestObj.getDatabaseName() &&
-           getForestName()   == forestObj.getForestName();
+           getForestId()   == forestObj.getForestId();
   }
 
   public int hashCode() {
     return (getHostName() != null ? getHostName().hashCode()     : 0) ^
       (getDatabaseName()  != null ? getDatabaseName().hashCode() : 0) ^
-      (getForestName()    != null ? getForestName().hashCode()   : 0);
+      (getForestId()    != null ? getForestId().hashCode()   : 0);
   }
 }

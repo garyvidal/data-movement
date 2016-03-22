@@ -22,7 +22,7 @@ import com.marklogic.datamovement.DataMovementEvent;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.JobTicket;
 
-public class BatchImpl<T extends DataMovementEvent> implements Batch<T> {
+public class BatchImpl<T> implements Batch<T> {
     private long batchNumber;
     private T[] items;
     private Calendar timestamp;

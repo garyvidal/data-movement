@@ -15,12 +15,14 @@
  */
 package com.marklogic.datamovement.impl;
 
+import com.marklogic.client.DatabaseClient;
 import com.marklogic.datamovement.HostBatcher;
 
 public class HostBatcherImpl<T extends HostBatcher<T>> implements HostBatcher<T> {
   private String jobName;
   private int batchSize;
   private int threadCount;
+  private DatabaseClient client;
 
   @SuppressWarnings("unchecked")
   public T withJobName(String jobName) {
@@ -51,4 +53,19 @@ public class HostBatcherImpl<T extends HostBatcher<T>> implements HostBatcher<T>
   public int getThreadCount() {
     return threadCount;
   }
+
+  public synchronized void setClient(DatabaseClient client) {
+    if ( client == null ) {
+      throw new IllegalStateException("client must not be null");
+    }
+    if ( this.client != null ) {
+      throw new IllegalStateException("You can only call setClient once per ImportHostBatcher instance");
+    }
+    this.client = client;
+  }
+
+  public DatabaseClient getClient() {
+    return client;
+  }
+
 }

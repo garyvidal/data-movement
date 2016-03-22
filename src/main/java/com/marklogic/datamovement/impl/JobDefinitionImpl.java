@@ -16,11 +16,14 @@
 package com.marklogic.datamovement.impl;
 
 import com.marklogic.datamovement.JobDefinition;
+import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.contentpump.ConfigConstants;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -168,5 +171,15 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     }
     throw new IllegalArgumentException("option '" + name +
       "' not found--check if your option name is valid");
+  }
+
+  public List<String> getMlcpArgs(JobType jobType) {
+    ArrayList<String> args = new ArrayList<String>();
+    args.add(jobType.toString());
+    Map<String, String> options = getOptions();
+    for ( String name: options.keySet() ) {
+      args.add( "-" + name ); args.add( options.get(name) );
+    }
+    return args;
   }
 }
