@@ -75,7 +75,7 @@ public class DataMovementServices {
       forests.add(new ForestImpl(host, database, name, id));
     }
 
-    return new ForestConfigurationImpl(forests.toArray(new ForestImpl[forests.size()]));
+    return new ForestConfigurationImpl(client, forests.toArray(new ForestImpl[forests.size()]));
   }
 
   public JobTicket startJob(ImportDefinition<?> def) {

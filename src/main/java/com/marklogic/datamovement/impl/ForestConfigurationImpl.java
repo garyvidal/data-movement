@@ -22,10 +22,12 @@ import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.ForestConfiguration;
 
 public class ForestConfigurationImpl implements ForestConfiguration {
+  private DatabaseClient primaryClient;
   private Forest[] forests;
   private AssignmentPolicy assignmentPolicy;
 
-  public ForestConfigurationImpl(Forest[] forests) {
+  public ForestConfigurationImpl(DatabaseClient primaryClient, Forest[] forests) {
+    this.primaryClient = primaryClient;
     this.forests = forests;
   }
 
@@ -40,8 +42,8 @@ public class ForestConfigurationImpl implements ForestConfiguration {
   }
 
   public DatabaseClient getForestClient(Forest forest) {
-    // TODO: implement
-    return null;
+    // TODO: implement with a forest-specific client
+    return primaryClient;
   }
 
   public AssignmentPolicy getAssignmentPolicy() {

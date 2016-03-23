@@ -13,42 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.impl;
 
 import com.marklogic.client.io.Format;
+import com.marklogic.datamovement.Forest;
+import com.marklogic.datamovement.QueryEvent;
 
-public class QueryHostException extends Exception implements QueryEvent {
-  private QueryEvent queryEvent;
+public class QueryEventImpl extends DataMovementEventImpl implements QueryEvent {
+  String sourceUri;
+  Forest forest;
+  Format format;
+  String mimeType;
 
-  public QueryHostException(QueryEvent queryEvent, Throwable cause) {
-    super(cause);
-    this.queryEvent = queryEvent;
-  }
-  public long getBytesMoved() {
-    return queryEvent.getBytesMoved();
-  }
-
-  public long getJobRecordNumber() {
-    return queryEvent.getJobRecordNumber();
-  }
-
-  public long getBatchRecordNumber() {
-    return queryEvent.getBatchRecordNumber();
+  public QueryEventImpl(String sourceUri, Forest forest, Format format, String mimeType) {
+    this.sourceUri = sourceUri ;
+    this.forest = forest ;
+    this.format = format ;
+    this.mimeType = mimeType ;
   }
 
   public String getSourceUri() {
-    return queryEvent.getSourceUri();
+    return sourceUri;
   }
 
   public Forest getSourceForest() {
-    return queryEvent.getSourceForest();
+    return forest;
   }
 
   public Format getFormat() {
-    return queryEvent.getFormat();
+    return format;
   }
 
   public String getMimetype() {
-    return queryEvent.getMimetype();
+    return mimeType;
   }
 }

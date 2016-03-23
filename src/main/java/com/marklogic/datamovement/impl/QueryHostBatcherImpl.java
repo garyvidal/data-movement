@@ -41,6 +41,7 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
 
   public QueryHostBatcherImpl(QueryDefinition query, ForestConfiguration forestConfig) {
     super();
+    this.query = query;
     this.forestConfig = forestConfig;
   }
 
@@ -66,29 +67,36 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
       final AtomicLong batchNumber = new AtomicLong();
       new Thread(
         new Runnable() { public void run() {
-          long resultsSoFar = 0;
-          DatabaseClient client = forestConfig.getForestClient(forest);
-          QueryManager queryMgr = client.newQueryManager();
-          Calendar queryStart = Calendar.getInstance();
-          SearchHandle results;
-          do {
-            results = queryMgr.search(finalQuery, new SearchHandle());
-            MatchDocumentSummary[] docs = results.getMatchResults();
-            resultsSoFar += docs.length;
-            String[] uris = new String[docs.length];
-            for ( int i=0; i < docs.length; i++ ) {
-              uris[i] = docs[i].getUri();
+          DatabaseClient client = null;
+          try {
+            long resultsSoFar = 0;
+            client = forestConfig.getForestClient(forest);
+            QueryManager queryMgr = client.newQueryManager();
+            Calendar queryStart = Calendar.getInstance();
+            SearchHandle results;
+            do {
+              results = queryMgr.search(finalQuery, new SearchHandle(), resultsSoFar + 1);
+              MatchDocumentSummary[] docs = results.getMatchResults();
+              resultsSoFar += docs.length;
+              String[] uris = new String[docs.length];
+              for ( int i=0; i < docs.length; i++ ) {
+                uris[i] = docs[i].getUri();
+              }
+              Batch<String> batch = new BatchImpl<String>()
+                .withBatchNumber(batchNumber.getAndIncrement())
+                .withItems(uris)
+                .withTimestamp(queryStart)
+                .withForest(forest);
+              for ( BatchListener<String> listener : urisReadyListeners ) {
+                listener.processEvent(client, batch);
+              }
+            } while ( results != null &&
+                    ( results.getTotalResults() > resultsSoFar ) );
+          } catch (Throwable t) {
+            for ( FailureListener<QueryHostException> listener : failureListeners ) {
+              listener.processFailure(client, new QueryHostException(null, t));
             }
-            Batch<String> batch = new BatchImpl<String>()
-              .withBatchNumber(batchNumber.getAndIncrement())
-              .withItems(uris)
-              .withTimestamp(queryStart)
-              .withForest(forest);
-            for ( BatchListener<String> listener : urisReadyListeners ) {
-              listener.processEvent(client, batch);
-            }
-          } while ( results != null &&
-                  ( results.getTotalResults() > resultsSoFar ) );
+          }
         }}
       ).start();
     }

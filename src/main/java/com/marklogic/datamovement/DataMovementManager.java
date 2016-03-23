@@ -16,8 +16,7 @@
 package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.query.CtsQueryDefinition;
-import com.marklogic.datamovement.impl.ForestConfigurationImpl;
+import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.QueryHostBatcherImpl;
 import com.marklogic.datamovement.impl.DataMovementServices;
@@ -86,7 +85,7 @@ public class DataMovementManager {
     return batcher;
   }
 
-  public QueryHostBatcher newQueryHostBatcher(CtsQueryDefinition query) {
+  public QueryHostBatcher newQueryHostBatcher(QueryDefinition query) {
     verifyClientIsSet("newQueryHostBatcher");
     QueryHostBatcherImpl batcher = new QueryHostBatcherImpl(query, getForestConfig());
     if ( client != null ) batcher.setClient(client);

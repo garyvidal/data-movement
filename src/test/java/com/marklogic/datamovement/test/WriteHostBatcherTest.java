@@ -16,7 +16,6 @@
 package com.marklogic.datamovement.test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -41,10 +40,9 @@ import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.JobTicket;
-import com.marklogic.datamovement.WriteEvent;
 import com.marklogic.datamovement.WriteHostBatcher;
 
-public class ImportHostBatcherTest {
+public class WriteHostBatcherTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
   private static DatabaseClient client =
     DatabaseClientFactory.newClient("localhost", 8000, "admin", "admin", Authentication.DIGEST);
@@ -104,17 +102,20 @@ public class ImportHostBatcherTest {
       .withCollections(collection);
     JsonNode doc1 = new ObjectMapper().readTree("{ \"testProperty\": \"test1\" }");
     JsonNode doc2 = new ObjectMapper().readTree("{ \"testProperty2\": \"test2\" }");
+    // this doc will fail to write because we say withFormat(JSON) but it isn't valid JSON
+    // that will trigger our onBatchFailure listener
     StringHandle doc3 = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
       .withFormat(Format.JSON);
     batcher.addAs(uri1, meta, doc1);
     batcher.addAs(uri2, meta, doc2);
     batcher.add(uri3, meta, doc3);
     batcher.flush();
-    assertEquals("The listner should have run", "true", successListenerWasRun.toString());
-    assertEquals("The listner should have run", "true", failListenerWasRun.toString());
+    assertEquals("The listener should have run", "true", successListenerWasRun.toString());
+    assertEquals("The listener should have run", "true", failListenerWasRun.toString());
 
     QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     DocumentPage docs = docMgr.search(query, 1);
+    // only doc1 and doc2 wrote successfully, doc3 failed
     assertEquals("there should be two docs in the collection", 2, docs.getTotalSize());
 
     for (DocumentRecord record : docs ) {
