@@ -20,7 +20,7 @@ import com.marklogic.datamovement.HostBatcher;
 
 public class HostBatcherImpl<T extends HostBatcher<T>> implements HostBatcher<T> {
   private String jobName;
-  private int batchSize;
+  private int batchSize = 100;
   private int threadCount;
   private DatabaseClient client;
 

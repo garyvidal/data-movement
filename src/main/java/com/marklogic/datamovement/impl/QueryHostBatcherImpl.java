@@ -65,6 +65,8 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
       final Forest forest = oneForestPerHost.get(host);
       final QueryDefinition finalQuery = query;
       final AtomicLong batchNumber = new AtomicLong();
+      // right now this just launches one thread per host
+      // TODO: (maybe) respect thread count
       new Thread(
         new Runnable() { public void run() {
           DatabaseClient client = null;
@@ -72,6 +74,7 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
             long resultsSoFar = 0;
             client = forestConfig.getForestClient(forest);
             QueryManager queryMgr = client.newQueryManager();
+            queryMgr.setPageLength(getBatchSize());
             Calendar queryStart = Calendar.getInstance();
             SearchHandle results;
             do {
@@ -91,7 +94,7 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
                 listener.processEvent(client, batch);
               }
             } while ( results != null &&
-                    ( results.getTotalResults() > resultsSoFar ) );
+                      ( results.getTotalResults() > resultsSoFar ) );
           } catch (Throwable t) {
             for ( FailureListener<QueryHostException> listener : failureListeners ) {
               listener.processFailure(client, new QueryHostException(null, t));

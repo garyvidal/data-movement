@@ -64,6 +64,7 @@ public class DataMovementServices {
         "    id:id," +
         "    database: xdmp.database()," +
         "    name: xdmp.forestName(id)," +
+        "    updatesAllowed: xdmp.forestUpdatesAllowed(id)," +
         "    host: xdmp.hostName(xdmp.forestHost(id))}}))")
       .eval();
     for ( EvalResult result : results ) {
@@ -72,7 +73,10 @@ public class DataMovementServices {
       String database = forestNode.get("database").asText();
       String id = forestNode.get("id").asText();
       String name = forestNode.get("name").asText();
-      forests.add(new ForestImpl(host, database, name, id));
+      boolean isUpdateable = "all".equals(forestNode.get("updatesAllowed").asText());
+      boolean isDeleteOnly = false; // TODO: get this for real after we start using a REST endpoint
+      long fragmentCount = 0;       // TODO: get this for real after we start using a REST endpoint
+      forests.add(new ForestImpl(host, database, name, id, isUpdateable, isDeleteOnly, fragmentCount));
     }
 
     return new ForestConfigurationImpl(client, forests.toArray(new ForestImpl[forests.size()]));

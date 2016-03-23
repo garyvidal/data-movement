@@ -18,6 +18,7 @@ package com.marklogic.datamovement.impl;
 import java.util.Random;
 
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.ForestConfiguration;
 
@@ -42,8 +43,18 @@ public class ForestConfigurationImpl implements ForestConfiguration {
   }
 
   public DatabaseClient getForestClient(Forest forest) {
-    // TODO: implement with a forest-specific client
-    return primaryClient;
+    DatabaseClient client = DatabaseClientFactory.newClient(
+      forest.getHostName(),
+      8000,
+      forest.getDatabaseName(),
+      primaryClient.getUser(),
+      primaryClient.getPassword(),
+      primaryClient.getAuthentication(),
+      forest.getForestName(),
+      primaryClient.getSSLContext(),
+      primaryClient.getSSLHostnameVerifier()
+    );
+    return client;
   }
 
   public AssignmentPolicy getAssignmentPolicy() {

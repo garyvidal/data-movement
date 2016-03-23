@@ -26,11 +26,16 @@ public class ForestImpl implements Forest {
   private boolean isDeleteOnly;
   private long fragmentCount;
 
-  public ForestImpl(String hostName, String databaseName, String forestName, String forestId) {
+  public ForestImpl(String hostName, String databaseName, String forestName, String forestId,
+    boolean isUpdateable, boolean isDeleteOnly, long fragmentCount)
+  {
     this.hostName = hostName;
-    this.databaseName = databaseName;
-    this.forestName = forestName;
-    this.forestId = forestId;
+    this.databaseName  = databaseName;
+    this.forestName    = forestName;
+    this.forestId      = forestId;
+    this.isUpdateable  = isUpdateable;
+    this.isDeleteOnly  = isDeleteOnly;
+    this.fragmentCount = fragmentCount;
   }
 
   public String getHostName() {

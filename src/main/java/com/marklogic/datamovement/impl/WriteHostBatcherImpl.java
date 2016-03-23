@@ -17,6 +17,7 @@ package com.marklogic.datamovement.impl;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
@@ -131,9 +132,13 @@ public class WriteHostBatcherImpl
    * ImportHostBatchFullListener
    */
   public void flush() {
-    for ( BatchWriteSet writeSet : writeSets.values() ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl] writeSet.getWriteSet().size()=[" + writeSet.getWriteSet().size() + "]");
-      flushBatch(writeSet);
+    // create a new HashSet so we don't get ConcurrentModificationException
+    // since we'll delete these as we go
+    for ( Forest forest : new HashSet<Forest>(writeSets.keySet()) ) {
+      BatchWriteSet writeSet = writeSets.get(forest);
+      if ( writeSet != null ) {
+        flushBatch(writeSet);
+      }
     }
   }
 
