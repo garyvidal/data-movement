@@ -45,15 +45,15 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
   public String getOutputDirectory();
   public T withOutputPartition(String partition);
   public String getOutputPartition();
-  public T withOutputPermissions(String role, String capability);
+  public T withOutputPermission(String role, String capability);
   public T withOutputPermissions(String role, String capability, String... roleCapabilityPairs);
   public String[] getOutputPermissions();
   public T withOutputQuality(int quality);
   public int getOutputQuality();
   public T withOutputUriPrefix(String prefix);
   public String getOutputUriPrefix();
-  public T withOutputUriReplace(String pattern, String replacement);
-  public T withOutputUriReplace(String pattern, String replacement, String...patternReplacementPairs);
+  public T withOutputUriReplacement(String pattern, String replacement);
+  public T withOutputUriReplacements(String pattern, String replacement, String...patternReplacementPairs);
   public String[] getOutputUriReplace();
   public T withOutputUriSuffix(String suffix);
   public String getOutputUriSuffix();
@@ -65,8 +65,6 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
   public DataMovementTransform<?> getTransform();
   public T withXmlRepairLevel(ImportDefinition.XmlRepairLevel xmlRepairLevel);
   public XmlRepairLevel getXmlRepairLevel();
-  public T onBatchSuccess(BatchListener<ImportEvent> listener);
-  public T onBatchFailure(BatchFailureListener<ImportEvent> listener);
 
   public enum XmlRepairLevel {
     DEFAULT,

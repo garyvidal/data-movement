@@ -87,8 +87,7 @@ public class DataMovementServices {
   }
 
   public JobTicket startJob(ExportDefinition def) {
-    // TODO: implement
-    return null;
+    return startMlcpJob(def, JobTicket.JobType.EXPORT);
   }
   public JobTicket startJob(CopyDefinition def) {
     // TODO: implement
@@ -127,7 +126,8 @@ public class DataMovementServices {
     List<String> argList = ((JobDefinitionImpl<?>) def).getMlcpArgs(jobType);
     argList.addAll( MlcpUtil.argsForClient(client) );
 System.out.println("DEBUG: [DataMovementServices] argList =[" + String.join(" ", argList)  + "]");
-    String[] args = argList.toArray(new String[] {});
+System.out.println("DEBUG: [DataMovementServices] argList.size()=[" + argList.size()  + "]");
+    String[] args = argList.toArray(new String[argList.size()]);
     try {
       String[] expandedArgs = OptionsFileUtil.expandArguments(args);
       ContentPump.runCommand(expandedArgs);

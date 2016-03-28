@@ -15,37 +15,29 @@
  */
 package com.marklogic.datamovement.test;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+
+import java.io.File;
+
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
-import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportDefinition;
-import com.marklogic.datamovement.JobTicket;
-import com.marklogic.datamovement.ModuleTransform;
-
+import com.fasterxml.jackson.databind.JsonNode;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
-import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.document.GenericDocumentManager;
 import com.marklogic.client.io.FileHandle;
 import com.marklogic.client.io.Format;
-
-import com.marklogic.contentpump.ConfigConstants;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import com.marklogic.datamovement.DataMovementManager;
+import com.marklogic.datamovement.ImportDefinition;
 
 public class ImportTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
   private static DatabaseClient client =
     DatabaseClientFactory.newClient("localhost", 8000, "admin", "admin", Authentication.DIGEST);
-  private static DocumentManager docMgr = client.newDocumentManager();
+  private static GenericDocumentManager docMgr = client.newDocumentManager();
   private static String uri = "ImportTest_content.json";
   private static String module = "ImportTest_transform.sjs";
   private static String moduleFunction = "ImportTest_transform_function";
@@ -75,7 +67,7 @@ public class ImportTest {
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
       docMgr.exists(uri), null );
 
-    ImportDefinition def = moveMgr.newImportDefinition()
+    ImportDefinition<?> def = moveMgr.newImportDefinition()
       .withInputFilePath("src/test/resources/" + uri)
       .withTransform(
         moveMgr.newModuleTransform("/ext/" + module, moduleFunction)
@@ -84,8 +76,8 @@ public class ImportTest {
       )
       // temporary work-around
       .withOption("transform_param", "test2")
-      .withOutputUriReplace("/.*", uri);
-    JobTicket ticket = moveMgr.startJob(def);
+      .withOutputUriReplacement("/.*", uri);
+    moveMgr.startJob(def);
     Thread.sleep(1000);
     assertEquals( "the transform should have changed testProperty to 'test2'",
       ((JsonNode) docMgr.readAs(uri, JsonNode.class)).get("testProperty").textValue(), "test2" );

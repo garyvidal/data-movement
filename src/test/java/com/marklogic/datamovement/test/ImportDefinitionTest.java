@@ -24,15 +24,12 @@ import org.junit.Test;
 import com.marklogic.client.io.Format;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportDefinition;
 import com.marklogic.datamovement.ImportDefinition.DataType;
-import com.marklogic.datamovement.ImportDefinition.DelimitedJsonImportDefinition;
 import com.marklogic.datamovement.ImportDefinition.InputFileType;
 import com.marklogic.datamovement.ImportDefinition.SequenceFileImportDefinition.SequenceValueType;
 import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
-import com.marklogic.datamovement.impl.ImportDefinitionImpl.DelimitedJsonImportDefinitionImpl;
 
 public class ImportDefinitionTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
@@ -100,7 +97,7 @@ public class ImportDefinitionTest {
     def.withOutputUriPrefix("/myPrefix/");
     expectedMlcpParams.add("-" + ConfigConstants.OUTPUT_URI_PREFIX); expectedMlcpParams.add("/myPrefix/");
 
-    def.withOutputUriReplace("/c:/files/", "", "/e:/prods/", "/products/");
+    def.withOutputUriReplacements("/c:/files/", "", "/e:/prods/", "/products/");
     expectedMlcpParams.add("-" + ConfigConstants.OUTPUT_URI_REPLACE);
     expectedMlcpParams.add("/c:/files/,'',/e:/prods/,'/products/'");
 
@@ -157,7 +154,6 @@ public class ImportDefinitionTest {
     assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
-/*
   @Test
   public void testArchiveOptions() throws Exception {
     ArrayList<String> expectedMlcpParams = new ArrayList<String>();
@@ -177,19 +173,15 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.COPY_PROPERTIES); expectedMlcpParams.add("false");
     expectedMlcpParams.add("-" + ConfigConstants.COPY_QUALITY); expectedMlcpParams.add("false");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
   public void testDelimitedJsonOptions() throws Exception {
     ArrayList<String> expectedMlcpParams = new ArrayList<String>();
-    ImportDefinition<?> idef = 
-      moveMgr.newImportDefinition();
-    @SuppressWarnings("unchecked")
-    DelimitedJsonImportDefinitionImpl def = (DelimitedJsonImportDefinitionImpl)
-      idef
-        .withInputFileType(InputFileType.DELIMITED_JSON);
-    def
+    ImportDefinitionImpl<?> def = (ImportDefinitionImpl<?>)
+      moveMgr.newImportDefinition()
+        .withInputFileType(InputFileType.DELIMITED_JSON)
         .withDelimiter("|")
         .withDelimitedRootName("document")
         .withGenerateUri(true)
@@ -201,7 +193,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.GENERATE_URI); expectedMlcpParams.add("true");
     expectedMlcpParams.add("-" + ConfigConstants.SPLIT_INPUT); expectedMlcpParams.add("true");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -213,7 +205,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add(JobTicket.JobType.IMPORT.toString());
     expectedMlcpParams.add("-" + ConfigConstants.INPUT_FILE_TYPE); expectedMlcpParams.add("delimited_text");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -227,7 +219,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.INPUT_FILE_TYPE); expectedMlcpParams.add("documents");
     expectedMlcpParams.add("-" + ConfigConstants.STREAMING); expectedMlcpParams.add("true");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -245,7 +237,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.DIRECTORY_FILTER); expectedMlcpParams.add("a,b,c");
     expectedMlcpParams.add("-" + ConfigConstants.TYPE_FILTER); expectedMlcpParams.add("a,b,c");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -261,7 +253,7 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.OUTPUT_GRAPH); expectedMlcpParams.add("outputGraph");
     expectedMlcpParams.add("-" + ConfigConstants.OUTPUT_OVERRIDE_GRAPH); expectedMlcpParams.add("outputOverrideGraph");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
 
   @Test
@@ -279,7 +271,6 @@ public class ImportDefinitionTest {
     expectedMlcpParams.add("-" + ConfigConstants.INPUT_SEQUENCEFILE_VALUE_CLASS); expectedMlcpParams.add("valueClassName");
     expectedMlcpParams.add("-" + ConfigConstants.INPUT_SEQUENCEFILE_VALUE_TYPE); expectedMlcpParams.add("BytesWritable");
 
-    assertEquals(expectedMlcpParams, def.getMlcpArgs());
+    assertEquals(expectedMlcpParams, def.getMlcpArgs(JobType.IMPORT));
   }
-  */
 }

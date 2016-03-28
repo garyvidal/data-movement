@@ -42,8 +42,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
   private int quality;
   private DataMovementTransform<?> transform;
   private ImportDefinition.XmlRepairLevel xmlRepairLevel;
-  private BatchListener<ImportEvent> onSuccessListener;
-  private BatchFailureListener<ImportEvent> onFailureListener;
 
   public ImportDefinitionImpl() {}
 
@@ -231,8 +229,7 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return getOption(ConfigConstants.OUTPUT_PARTITION);
   }
 
-  public T withOutputPermissions(String role, String capability) {
-    outputPermissions.clear();
+  public T withOutputPermission(String role, String capability) {
     if ( role == null )       throw new IllegalArgumentException("role must not be null");
     if ( capability == null ) throw new IllegalArgumentException("capability must not be null");
     outputPermissions.add(role); outputPermissions.add(capability);
@@ -241,7 +238,8 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
 
   @SuppressWarnings("unchecked")
   public T withOutputPermissions(String role, String capability, String... roleCapabilityPairs) {
-    withOutputPermissions(role, capability);
+    outputPermissions.clear();
+    withOutputPermission(role, capability);
     if ( roleCapabilityPairs == null ) return (T) this;
     this.outputPermissions.addAll(Arrays.asList(roleCapabilityPairs));
     return withOption(ConfigConstants.OUTPUT_PERMISSIONS, String.join(",", outputPermissions));
@@ -268,16 +266,16 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return getOption(ConfigConstants.OUTPUT_URI_PREFIX);
   }
 
-  public T withOutputUriReplace(String pattern, String replacement) {
-    outputUriReplace.clear();
+  public T withOutputUriReplacement(String pattern, String replacement) {
     if ( pattern == null )     throw new IllegalArgumentException("pattern must not be null");
     if ( replacement == null ) throw new IllegalArgumentException("replacement must not be null");
     outputUriReplace.add(pattern); outputUriReplace.add(replacement);
     return withOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
   }
 
-  public T withOutputUriReplace(String pattern, String replacement, String...patternReplacementPairs) {
-    withOutputUriReplace(pattern, replacement);
+  public T withOutputUriReplacements(String pattern, String replacement, String...patternReplacementPairs) {
+    outputUriReplace.clear();
+    withOutputUriReplacement(pattern, replacement);
     outputUriReplace.addAll(Arrays.asList(patternReplacementPairs));
     return withOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
   }
@@ -348,16 +346,12 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return xmlRepairLevel;
   }
 
-  @SuppressWarnings("unchecked")
   public T onBatchSuccess(BatchListener<ImportEvent> listener) {
-    this.onSuccessListener = listener;
-    return (T) this;
+    throw new IllegalStateException("this feature is not yet implemented");
   }
 
-  @SuppressWarnings("unchecked")
   public T onBatchFailure(BatchFailureListener<ImportEvent> listener) {
-    this.onFailureListener = listener;
-    return (T) this;
+    throw new IllegalStateException("this feature is not yet implemented");
   }
 
   public class AggregatesImportDefinitionImpl
@@ -545,7 +539,7 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     public ForestImportDefinition withCollectionFilter(String... forests) {
       this.collectionFilters.clear();
       this.collectionFilters.addAll(Arrays.asList(forests));
-      return withOption(ConfigConstants.OUTPUT_COLLECTIONS, String.join(",", collectionFilters));
+      return withOption(ConfigConstants.COLLECTION_FILTER, String.join(",", collectionFilters));
     }
 
     public String[] getCollectionFilter() {
@@ -555,7 +549,7 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     public ForestImportDefinition withDirectoryFilter(String... directories) {
       this.directoryFilters.clear();
       this.directoryFilters.addAll(Arrays.asList(directories));
-      return withOption(ConfigConstants.OUTPUT_COLLECTIONS, String.join(",", directoryFilters));
+      return withOption(ConfigConstants.DIRECTORY_FILTER, String.join(",", directoryFilters));
     }
 
     public String[] getDirectoryFilter() {
@@ -565,7 +559,7 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     public ForestImportDefinition withTypeFilter(String... types) {
       this.typeFilters.clear();
       this.typeFilters.addAll(Arrays.asList(types));
-      return withOption(ConfigConstants.OUTPUT_COLLECTIONS, String.join(",", typeFilters));
+      return withOption(ConfigConstants.TYPE_FILTER, String.join(",", typeFilters));
     }
 
     public String[] getTypeFilter() {

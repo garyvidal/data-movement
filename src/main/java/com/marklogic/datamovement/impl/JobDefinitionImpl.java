@@ -107,6 +107,8 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
    */
   public synchronized T withOption(String name, String value) {
     checkMlcpOptionName(name);
+    if ( value == null ) throw new IllegalArgumentException("Value of option '" + name +
+      "' cannot be null");
     this.options.put(name, value);
     return (T) this;
   }
@@ -117,6 +119,8 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     if ( options == null ) return (T) this;
     for ( String name : options.keySet() ) {
       checkMlcpOptionName(name);
+      if ( options.get(name) == null ) throw new IllegalArgumentException("Value of option '"
+        + name + "' cannot be null");
     }
     this.options.putAll(options);
     return (T) this;

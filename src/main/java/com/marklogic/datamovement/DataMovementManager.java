@@ -17,6 +17,7 @@ package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.query.QueryDefinition;
+import com.marklogic.datamovement.impl.ExportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.QueryHostBatcherImpl;
 import com.marklogic.datamovement.impl.DataMovementServices;
@@ -46,7 +47,7 @@ public class DataMovementManager {
     return client;
   }
 
-  public JobTicket startJob(ImportDefinition def) {
+  public JobTicket startJob(ImportDefinition<?> def) {
     return service.startJob(def);
   }
   public JobTicket startJob(ExportDefinition def) {
@@ -97,9 +98,7 @@ public class DataMovementManager {
   }
 
   public ExportDefinition newExportDefinition() {
-    //return new ExportDefinitionImpl();
-    // TODO: implement
-    return null;
+    return new ExportDefinitionImpl();
   }
 
   public CopyDefinition newCopyDefinition() {
