@@ -45,7 +45,7 @@ public class ForestConfigurationImpl implements ForestConfiguration {
   public DatabaseClient getForestClient(Forest forest) {
     DatabaseClient client = DatabaseClientFactory.newClient(
       forest.getHostName(),
-      8000,
+      primaryClient.getPort(),
       forest.getDatabaseName(),
       primaryClient.getUser(),
       primaryClient.getPassword(),

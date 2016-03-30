@@ -49,6 +49,7 @@ public class ForestConfigTest {
     moveMgr.setClient(client);
     String defaultUser = client.getUser();
     String defaultPass = client.getPassword();
+    int defaultPort = client.getPort();
     Authentication defaultAuth = client.getAuthentication();
     ForestConfiguration forestConfig = moveMgr.readForestConfig();
     Forest[] forests = forestConfig.listForests();
@@ -62,7 +63,7 @@ public class ForestConfigTest {
       assertEquals(defaultUser, forestClient.getUser());
       assertEquals(defaultPass, forestClient.getPassword());
       // not all hosts have the original REST server, but all hosts have the uber port
-      assertEquals(8000, forestClient.getPort());
+      assertEquals(defaultPort, forestClient.getPort());
       assertEquals(defaultDatabase, forest.getDatabaseName());
       assertEquals(defaultAuth, forestClient.getAuthentication());
       assertEquals(forest.getForestName(), forestClient.getForestName());
