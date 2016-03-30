@@ -45,13 +45,12 @@ public class ImportTest {
   @BeforeClass
   public static void beforeClass() {
     System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "debug");
-    docMgr.delete(uri);
     installModule();
   }
 
   @AfterClass
   public static void afterClass() {
-    //docMgr.delete(uri);
+    docMgr.delete(uri);
     client.release();
   }
 
