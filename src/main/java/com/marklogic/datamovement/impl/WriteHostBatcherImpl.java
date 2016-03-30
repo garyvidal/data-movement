@@ -144,10 +144,10 @@ public class WriteHostBatcherImpl
 
   public void flushBatch(BatchWriteSet writeSet) {
     Transaction transaction = writeSet.getTransaction();
+    Forest forest = writeSet.getForest();
     try {
       docMgr.write(writeSet.getWriteSet(), getTransform(), transaction, getTemporalCollection());
       int batchNumberInTransaction = writeSet.getBatchNumberInTransaction();
-      Forest forest = writeSet.getForest();
       if ( batchNumberInTransaction >= getTransactionSize() ) {
         synchronized(writeSets) {
           writeSets.remove(forest);
@@ -162,6 +162,10 @@ public class WriteHostBatcherImpl
         }
       }
     } catch (Throwable t) {
+      try { if ( transaction != null ) transaction.rollback(); } catch(Throwable t2) {}
+      synchronized(writeSets) {
+        writeSets.remove(forest);
+      }
       Batch<WriteEvent> batch = writeSet.getBatchOfWriteEvents();
       for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
         failureListener.processEvent(getClient(), batch, t);

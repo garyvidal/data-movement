@@ -34,6 +34,7 @@ import com.marklogic.client.document.DocumentRecord;
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.FileHandle;
+import com.marklogic.client.io.JacksonHandle;
 import com.marklogic.client.io.StringHandle;
 import com.marklogic.client.io.Format;
 import com.marklogic.client.query.QueryDefinition;
@@ -50,6 +51,7 @@ public class WriteHostBatcherTest {
   private static String uri1 = "ImportHostBatcherTest_content_1.txt";
   private static String uri2 = "ImportHostBatcherTest_content_2.txt";
   private static String uri3 = "ImportHostBatcherTest_content_3.txt";
+  private static String uri4 = "ImportHostBatcherTest_content_4.txt";
   private static String collection = "ImportHostBatcherTest";
   private static String transform = "ImportHostBatcherTest_transform.sjs";
 
@@ -82,7 +84,7 @@ public class WriteHostBatcherTest {
       .withBatchSize(2)
       .withTransform(
         new ServerTransform(transform)
-          .addParameter("newValue", "test2")
+          .addParameter("newValue", "test1a")
       )
       .onBatchSuccess(
         (client, batch) -> {
@@ -93,7 +95,7 @@ public class WriteHostBatcherTest {
       .onBatchFailure(
         (client, batch, throwable) -> {
           failListenerWasRun.append("true");
-          assertEquals("There should be one item in the batch", 1, batch.getItems().length);
+          assertEquals("There should be two items in the batch", 2, batch.getItems().length);
         }
       );
     JobTicket ticket = moveMgr.startJob(batcher);
@@ -102,13 +104,15 @@ public class WriteHostBatcherTest {
       .withCollections(collection);
     JsonNode doc1 = new ObjectMapper().readTree("{ \"testProperty\": \"test1\" }");
     JsonNode doc2 = new ObjectMapper().readTree("{ \"testProperty2\": \"test2\" }");
-    // this doc will fail to write because we say withFormat(JSON) but it isn't valid JSON
-    // that will trigger our onBatchFailure listener
+    // the batch with this doc will fail to write because we say withFormat(JSON)
+    // but it isn't valid JSON. That will trigger our onBatchFailure listener.
     StringHandle doc3 = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
       .withFormat(Format.JSON);
+    JsonNode doc4 = new ObjectMapper().readTree("{ \"testProperty4\": \"test4\" }");
     batcher.addAs(uri1, meta, doc1);
     batcher.addAs(uri2, meta, doc2);
     batcher.add(uri3, meta, doc3);
+    batcher.add(uri4, meta, new JacksonHandle(doc4));
     batcher.flush();
     assertEquals("The listener should have run", "true", successListenerWasRun.toString());
     assertEquals("The listener should have run", "true", failListenerWasRun.toString());
@@ -120,8 +124,8 @@ public class WriteHostBatcherTest {
 
     for (DocumentRecord record : docs ) {
       if ( uri1.equals(record.getUri()) ) {
-        assertEquals( "the transform should have changed testProperty to 'test2'",
-          "test2", record.getContentAs(JsonNode.class).get("testProperty").textValue() );
+        assertEquals( "the transform should have changed testProperty to 'test1a'",
+          "test1a", record.getContentAs(JsonNode.class).get("testProperty").textValue() );
       }
     }
   }
