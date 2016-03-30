@@ -43,6 +43,8 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
   public String[] getOutputCollections();
   public T withOutputDirectory(String directory);
   public String getOutputDirectory();
+  public T withOutputLanguage(String xmlLang);
+  public String getOutputLanguage();
   public T withOutputPartition(String partition);
   public String getOutputPartition();
   public T withOutputPermission(String role, String capability);
@@ -146,8 +148,6 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
     public String getInputCompressionCodec();
     public DelimitedTextImportDefinition withNamespace(String namespace);
     public String getNamespace();
-    public DelimitedTextImportDefinition withOutputLanguage(String xmlLang);
-    public String getOutputLanguage();
     public DelimitedTextImportDefinition withUriId(String name);
     public String getUriId();
   }
@@ -170,8 +170,6 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
     public boolean getGenerateUri();
     public DelimitedJsonImportDefinition withNamespace(String namespace);
     public String getNamespace();
-    public DelimitedJsonImportDefinition withOutputLanguage(String xmlLang);
-    public String getOutputLanguage();
     public DelimitedJsonImportDefinition withSplitInput(boolean split);
     public boolean getSplitInput();
     public DelimitedJsonImportDefinition withUriId(String name);
