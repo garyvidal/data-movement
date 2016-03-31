@@ -60,7 +60,7 @@ public class ImportTest {
   }
 
   @Test
-  public void testArgs() throws Exception {
+  public void testImport() throws Exception {
     moveMgr.setClient(client);
 
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",

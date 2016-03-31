@@ -26,6 +26,7 @@ public interface ImportDefinition<T extends ImportDefinition<T>>
   public T withContentEncoding(String charset);
   public String getContentEncoding();
   public T withFastload(boolean fastload);
+  public boolean getFastload();
   public T withInputFilePath(String path);
   public String getInputFilePath();
   public T withInputFilePattern(String pattern);

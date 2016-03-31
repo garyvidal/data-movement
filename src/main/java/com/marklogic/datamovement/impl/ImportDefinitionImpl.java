@@ -18,29 +18,21 @@ package com.marklogic.datamovement.impl;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import com.marklogic.client.io.Format;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
-import com.marklogic.datamovement.DataMovementTransform;
 import com.marklogic.datamovement.ImportDefinition;
 import com.marklogic.datamovement.ImportEvent;
-import com.marklogic.datamovement.JobTicket;
 
 public class ImportDefinitionImpl<T extends ImportDefinition<T>>
   extends JobDefinitionImpl<T>
   implements ImportDefinition<T>
 {
-  private ArrayList<String> collections = new ArrayList<>();
   private Map<String,DataType> dataType = new LinkedHashMap<>();
   private InputFileType<?> inputFileType;
-  private ArrayList<String> outputPermissions = new ArrayList<>();
-  private ArrayList<String> outputUriReplace = new ArrayList<>();
-  private int quality;
-  private DataMovementTransform<?> transform;
   private ImportDefinition.XmlRepairLevel xmlRepairLevel;
 
   public ImportDefinitionImpl() {}
@@ -83,14 +75,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     String docType = getOption(ConfigConstants.DOCUMENT_TYPE);
     if ( docType == null ) return null;
     return Format.valueOf(Format.class, docType.toUpperCase());
-  }
-
-  public T withFastload(boolean fastload) {
-    return withOption(ConfigConstants.FAST_LOAD, String.valueOf(fastload));
-  }
-
-  public boolean getFastload() {
-    return getBooleanOption(ConfigConstants.FAST_LOAD, false);
   }
 
   public T withInputCompressed(boolean compressed) {
@@ -171,14 +155,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return getOption(ConfigConstants.INPUT_FILE_PATTERN);
   }
 
-  public T withMaxSplitSize(long splitSize) {
-    return withOption(ConfigConstants.MAX_SPLIT_SIZE, String.valueOf(splitSize));
-  }
-
-  public long getMaxSplitSize() {
-    return getLongOption(ConfigConstants.MAX_SPLIT_SIZE, Long.MAX_VALUE);
-  }
-
   public T withMinSplitSize(long splitSize) {
     return withOption(ConfigConstants.MIN_SPLIT_SIZE, String.valueOf(splitSize));
   }
@@ -193,16 +169,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
 
   public boolean getOutputCleanDir() {
     return getBooleanOption(ConfigConstants.OUTPUT_CLEANDIR, false);
-  }
-
-  public T withOutputCollections(String... collections) {
-    this.collections.clear();
-    this.collections.addAll(Arrays.asList(collections));
-    return withOption(ConfigConstants.OUTPUT_COLLECTIONS, String.join(",", collections));
-  }
-
-  public String[] getOutputCollections() {
-    return collections.toArray(new String[collections.size()]);
   }
 
   public T withOutputDirectory(String directory) {
@@ -221,76 +187,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return getOption(ConfigConstants.OUTPUT_LANGUAGE);
   }
 
-  public T withOutputPartition(String partition) {
-    return withOption(ConfigConstants.OUTPUT_PARTITION, partition);
-  }
-
-  public String getOutputPartition() {
-    return getOption(ConfigConstants.OUTPUT_PARTITION);
-  }
-
-  public T withOutputPermission(String role, String capability) {
-    if ( role == null )       throw new IllegalArgumentException("role must not be null");
-    if ( capability == null ) throw new IllegalArgumentException("capability must not be null");
-    outputPermissions.add(role); outputPermissions.add(capability);
-    return withOption(ConfigConstants.OUTPUT_PERMISSIONS, String.join(",", outputPermissions));
-  }
-
-  @SuppressWarnings("unchecked")
-  public T withOutputPermissions(String role, String capability, String... roleCapabilityPairs) {
-    outputPermissions.clear();
-    withOutputPermission(role, capability);
-    if ( roleCapabilityPairs == null ) return (T) this;
-    this.outputPermissions.addAll(Arrays.asList(roleCapabilityPairs));
-    return withOption(ConfigConstants.OUTPUT_PERMISSIONS, String.join(",", outputPermissions));
-  }
-
-  public String[] getOutputPermissions() {
-    return outputPermissions.toArray(new String[outputPermissions.size()]);
-  }
-
-  public T withOutputQuality(int quality) {
-    this.quality = quality;
-    return withOption(ConfigConstants.OUTPUT_QUALITY, String.valueOf(quality));
-  }
-
-  public int getOutputQuality() {
-    return quality;
-  }
-
-  public T withOutputUriPrefix(String prefix) {
-    return withOption(ConfigConstants.OUTPUT_URI_PREFIX, prefix);
-  }
-
-  public String getOutputUriPrefix() {
-    return getOption(ConfigConstants.OUTPUT_URI_PREFIX);
-  }
-
-  public T withOutputUriReplacement(String pattern, String replacement) {
-    if ( pattern == null )     throw new IllegalArgumentException("pattern must not be null");
-    if ( replacement == null ) throw new IllegalArgumentException("replacement must not be null");
-    outputUriReplace.add(pattern); outputUriReplace.add(replacement);
-    return withOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
-  }
-
-  public T withOutputUriReplacements(String pattern, String replacement, String...patternReplacementPairs) {
-    outputUriReplace.clear();
-    withOutputUriReplacement(pattern, replacement);
-    outputUriReplace.addAll(Arrays.asList(patternReplacementPairs));
-    return withOption(ConfigConstants.OUTPUT_URI_REPLACE, MlcpUtil.combineRegexPairs(outputUriReplace));
-  }
-
-  public String[] getOutputUriReplace() {
-    return outputUriReplace.toArray(new String[0]);
-  }
-  public T withOutputUriSuffix(String suffix) {
-    return withOption(ConfigConstants.OUTPUT_URI_SUFFIX, suffix);
-  }
-
-  public String getOutputUriSuffix() {
-    return getOption(ConfigConstants.OUTPUT_URI_SUFFIX);
-  }
-
   public T withNamespace(String namespace) {
     return withOption(ConfigConstants.NAMESPACE, namespace);
   }
@@ -299,30 +195,12 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     return getOption(ConfigConstants.NAMESPACE);
   }
 
-  public T withTemporalCollection(String collection) {
-    return withOption(ConfigConstants.TEMPORAL_COLLECTION, collection);
-  }
-
-  public String getTemporalCollection() {
-    return getOption(ConfigConstants.TEMPORAL_COLLECTION);
-  }
-
   public T withTolerateErrors(boolean tolerateErrors) {
     return withOption(ConfigConstants.TOLERATE_ERRORS, String.valueOf(tolerateErrors));
   }
 
   public boolean getTolerateErrors() {
     return getBooleanOption(ConfigConstants.ARCHIVE_METADATA_OPTIONAL, false);
-  }
-
-  public T withTransform(DataMovementTransform<?> transform) {
-    this.transform = transform;
-    MlcpUtil.clearOptionsForTransforms(getOptions());
-    return withOptions( MlcpUtil.optionsForTransforms(transform) );
-  }
-
-  public DataMovementTransform<?> getTransform() {
-    return transform;
   }
 
   public T withUriId(String uriId) {
@@ -402,39 +280,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
 
     public boolean getArchiveMetadataOptional() {
       return getBooleanOption(ConfigConstants.ARCHIVE_METADATA_OPTIONAL, false);
-    }
-
-
-    public ArchiveImportDefinition withCopyCollections(boolean copy) {
-      return withOption(ConfigConstants.COPY_COLLECTIONS, String.valueOf(copy));
-    }
-
-    public boolean getCopyCollections() {
-      return getBooleanOption(ConfigConstants.COPY_COLLECTIONS, true);
-    }
-
-    public ArchiveImportDefinition withCopyPermissions(boolean copy) {
-      return withOption(ConfigConstants.COPY_PERMISSIONS, String.valueOf(copy));
-    }
-
-    public boolean getCopyPermissions() {
-      return getBooleanOption(ConfigConstants.COPY_PERMISSIONS, true);
-    }
-
-    public ArchiveImportDefinition withCopyProperties (boolean copy) {
-      return withOption(ConfigConstants.COPY_PROPERTIES, String.valueOf(copy));
-    }
-
-    public boolean getCopyProperties() {
-      return getBooleanOption(ConfigConstants.COPY_PROPERTIES, true);
-    }
-
-    public ArchiveImportDefinition withCopyQuality    (boolean copy) {
-      return withOption(ConfigConstants.COPY_QUALITY, String.valueOf(copy));
-    }
-
-    public boolean getCopyQuality() {
-      return getBooleanOption(ConfigConstants.COPY_QUALITY, true);
     }
   }
 
@@ -535,26 +380,6 @@ public class ImportDefinitionImpl<T extends ImportDefinition<T>>
     private ArrayList<String> collectionFilters = new ArrayList<>();
     private ArrayList<String> directoryFilters  = new ArrayList<>();
     private ArrayList<String> typeFilters       = new ArrayList<>();
-
-    public ForestImportDefinition withCollectionFilter(String... forests) {
-      this.collectionFilters.clear();
-      this.collectionFilters.addAll(Arrays.asList(forests));
-      return withOption(ConfigConstants.COLLECTION_FILTER, String.join(",", collectionFilters));
-    }
-
-    public String[] getCollectionFilter() {
-      return collectionFilters.toArray(new String[collectionFilters.size()]);
-    }
-
-    public ForestImportDefinition withDirectoryFilter(String... directories) {
-      this.directoryFilters.clear();
-      this.directoryFilters.addAll(Arrays.asList(directories));
-      return withOption(ConfigConstants.DIRECTORY_FILTER, String.join(",", directoryFilters));
-    }
-
-    public String[] getDirectoryFilter() {
-      return directoryFilters.toArray(new String[directoryFilters.size()]);
-    }
 
     public ForestImportDefinition withTypeFilter(String... types) {
       this.typeFilters.clear();

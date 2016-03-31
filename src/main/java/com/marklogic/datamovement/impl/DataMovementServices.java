@@ -15,7 +15,16 @@
  */
 package com.marklogic.datamovement.impl;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
 import com.fasterxml.jackson.databind.JsonNode;
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.eval.EvalResult;
+import com.marklogic.client.eval.EvalResultIterator;
+import com.marklogic.contentpump.ContentPump;
+import com.marklogic.contentpump.utilities.OptionsFileUtil;
 import com.marklogic.datamovement.CopyDefinition;
 import com.marklogic.datamovement.DataMovementException;
 import com.marklogic.datamovement.DeleteDefinition;
@@ -28,19 +37,6 @@ import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.datamovement.UpdateDefinition;
 import com.marklogic.datamovement.WriteHostBatcher;
-import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.eval.EvalResult;
-import com.marklogic.client.eval.EvalResultIterator;
-import com.marklogic.client.eval.ServerEvaluationCall;
-import com.marklogic.client.io.JacksonHandle;
-import com.marklogic.client.query.QueryDefinition;
-import com.marklogic.client.query.StructuredQueryBuilder;
-import com.marklogic.contentpump.ContentPump;
-import com.marklogic.contentpump.utilities.OptionsFileUtil;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
 
 public class DataMovementServices {
   private DatabaseClient client;
@@ -90,8 +86,7 @@ public class DataMovementServices {
     return startMlcpJob(def, JobTicket.JobType.EXPORT);
   }
   public JobTicket startJob(CopyDefinition def) {
-    // TODO: implement
-    return null;
+    return startMlcpJob(def, JobTicket.JobType.COPY);
   }
   public JobTicket startJob(UpdateDefinition def) {
     // TODO: implement
@@ -108,6 +103,7 @@ public class DataMovementServices {
   }
 
   public JobTicket startJob(QueryHostBatcher batcher) {
+    // TODO: implement job tracking
     ((QueryHostBatcherImpl) batcher).start();
     return new JobTicketImpl(generateJobId(), JobTicket.JobType.QUERY_HOST_BATCHER);
   }

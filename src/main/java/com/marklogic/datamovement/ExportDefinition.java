@@ -21,7 +21,7 @@ import com.marklogic.client.util.IterableNamespaceContext;
 public interface ExportDefinition extends JobDefinition<ExportDefinition> {
   public ExportDefinition withQueryFilter(CtsQueryDefinition query);
   public CtsQueryDefinition getQueryFilter();
-  public ExportDefinition withCollectionFilter(String... forests);
+  public ExportDefinition withCollectionFilter(String... collections);
   public String[] getCollectionFilter();
   public ExportDefinition withCompress(boolean compress);
   public boolean getCompress();

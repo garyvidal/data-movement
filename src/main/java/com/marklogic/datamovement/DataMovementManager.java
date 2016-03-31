@@ -17,6 +17,7 @@ package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.query.QueryDefinition;
+import com.marklogic.datamovement.impl.CopyDefinitionImpl;
 import com.marklogic.datamovement.impl.ExportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
 import com.marklogic.datamovement.impl.QueryHostBatcherImpl;
@@ -102,9 +103,7 @@ public class DataMovementManager {
   }
 
   public CopyDefinition newCopyDefinition() {
-    //return new CopyDefinitionImpl();
-    // TODO: implement
-    return null;
+    return new CopyDefinitionImpl();
   }
 
   public UpdateDefinition newUpdateDefinition() {

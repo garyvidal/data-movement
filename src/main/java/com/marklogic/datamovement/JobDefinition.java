@@ -19,13 +19,21 @@ import java.util.Map;
 
 public interface JobDefinition<T extends JobDefinition> {
   public T withJobName(String jobName);
+  public String getJobName();
   public T withBatchSize(long batchSize);
+  public long getBatchSize();
   public T withConf(String filepath);
+  public String getConf();
   public T withMode(JobDefinition.Mode mode);
+  public JobDefinition.Mode getMode();
   public T withOptionsFile(String optionsFilePath);
+  public String getOptionsFile();
   public T withThreadCount(int threadCount);
+  public int getThreadCount();
   public T withThreadCountPerSplit(int threadCount);
+  public int getThreadCountPerSplit();
   public T withTransactionSize(int transactionSize);
+  public int getTransactionSize();
   public T withOption(String name, String value);
   public T withOptions(Map<String,String> options);
   public String getOption(String name);

@@ -73,7 +73,7 @@ public class ExportTest {
   }
 
   @Test
-  public void testArgs() throws Exception {
+  public void testExport() throws Exception {
     moveMgr.setClient(client);
 
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
