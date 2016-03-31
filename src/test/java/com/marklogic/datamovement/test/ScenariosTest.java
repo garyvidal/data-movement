@@ -15,33 +15,28 @@
  */
 package com.marklogic.datamovement.test;
 
-import org.junit.Test;
-
-import com.marklogic.datamovement.Batch;
-import com.marklogic.datamovement.ImportEvent;
-import com.marklogic.datamovement.JobReport;
-import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.JobTicket;
-import com.marklogic.datamovement.WriteEvent;
-import com.marklogic.datamovement.WriteHostBatcher;
-import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.DatabaseClientFactory;
-
 import static com.marklogic.client.DatabaseClientFactory.Authentication.BASIC;
 
-import com.marklogic.client.io.DOMHandle;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.logging.Logger;
-import java.util.logging.Level;
+import org.junit.Test;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.DatabaseClientFactory;
+import com.marklogic.client.io.DOMHandle;
+import com.marklogic.datamovement.DataMovementManager;
+import com.marklogic.datamovement.JobReport;
+import com.marklogic.datamovement.JobTicket;
+import com.marklogic.datamovement.WriteEvent;
+import com.marklogic.datamovement.WriteHostBatcher;
 
 
 public class ScenariosTest {

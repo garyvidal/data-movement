@@ -13,9 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.mlcp;
 
-public interface UpdateEvent extends DataMovementEvent {
-  public String getUri();
-  public Forest getSourceForest();
+public interface ModuleTransform extends DataMovementTransform<ModuleTransform> {
+  public String getModulePath();
+  public String getFunctionName();
+  public String getFunctionNamespace();
 }

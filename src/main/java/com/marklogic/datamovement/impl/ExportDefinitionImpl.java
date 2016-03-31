@@ -18,8 +18,8 @@ package com.marklogic.datamovement.impl;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
-import com.marklogic.datamovement.ExportDefinition;
-import com.marklogic.datamovement.ExportEvent;
+import com.marklogic.datamovement.mlcp.ExportDefinition;
+import com.marklogic.datamovement.mlcp.ExportEvent;
 
 public class ExportDefinitionImpl
   extends JobDefinitionImpl<ExportDefinition>

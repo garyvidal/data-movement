@@ -31,7 +31,7 @@ import com.marklogic.client.document.GenericDocumentManager;
 import com.marklogic.client.io.FileHandle;
 import com.marklogic.client.io.Format;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportDefinition;
+import com.marklogic.datamovement.mlcp.ImportDefinition;
 
 public class ImportTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();

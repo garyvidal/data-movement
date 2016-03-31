@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.mlcp;
 
-import com.marklogic.client.query.CtsQueryDefinition;
+import com.marklogic.datamovement.QueryEvent;
 
-public interface UpdateDefinition extends JobDefinition<UpdateDefinition> {
-  public UpdateDefinition query(CtsQueryDefinition query);
-  public UpdateDefinition transform(DataMovementTransform transform);
-  public UpdateDefinition onBatchSuccess(BatchListener<UpdateEvent> listener);
-  public UpdateDefinition onBatchFailure(BatchFailureListener<UpdateEvent> listener);
+public interface ExportEvent extends QueryEvent {
+  public String getTargetUri();
+  public long getTargetRecordNumber();
 }

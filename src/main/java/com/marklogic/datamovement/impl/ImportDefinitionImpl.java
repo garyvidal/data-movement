@@ -24,8 +24,8 @@ import com.marklogic.client.io.Format;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
-import com.marklogic.datamovement.ImportDefinition;
-import com.marklogic.datamovement.ImportEvent;
+import com.marklogic.datamovement.mlcp.ImportDefinition;
+import com.marklogic.datamovement.mlcp.ImportEvent;
 
 public class ImportDefinitionImpl<T extends ImportDefinition<T>>
   extends JobDefinitionImpl<T>

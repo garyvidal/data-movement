@@ -33,10 +33,6 @@ public interface WriteHostBatcher extends HostBatcher<WriteHostBatcher> {
   public void flush();
   public void finalize(); // calls flush()
 
-  /** Flush every <interval> milliseconds */
-  public WriteHostBatcher withAutoFlushInterval(long interval);
-  public long getAutoFlushInterval();
-
   public WriteHostBatcher withTransactionSize(int transactionSize);
   public int getTransactionSize();
 

@@ -15,33 +15,24 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.AdhocTransform;
-import com.marklogic.datamovement.DataMovementTransform;
-import com.marklogic.datamovement.JobDefinition;
-import com.marklogic.datamovement.ModuleTransform;
-
-import com.marklogic.client.DatabaseClient;
-
-import com.marklogic.contentpump.ConfigConstants;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.marklogic.client.DatabaseClient;
+import com.marklogic.contentpump.ConfigConstants;
+import com.marklogic.datamovement.mlcp.DataMovementTransform;
+import com.marklogic.datamovement.mlcp.ModuleTransform;
 
 public class MlcpUtil {
-  // look in the method name for any cap char followed by lower-case chars
-  private static Pattern pattern = Pattern.compile("[A-Z][a-z]+");
 
-  /** Prepares mlcp command-line args for connection and authentication
+  /** Prepares mlcp command-line args -host, -port, -username, -password, and -database.
+   * @param client the source for the values of the command line args
+   * @return the command-line args and values, ready to pass to mlcp
    */
   public static List<String> argsForClient(DatabaseClient client) {
     ArrayList<String> mlcpArgs = new ArrayList<String>();
@@ -62,7 +53,9 @@ public class MlcpUtil {
   }
 
   /** For each getter, converts a List of pattern,replacement pairs into mlcp command-line syntax
-   * "pattern,'string',pattern,'string'"
+   * "pattern,'string',pattern,'string'".
+   * @param pairs a List of strings with alternating regex pattern then replacement
+   * @return the pairs combined into a string value suitable to pass to mlcp
    */
   public static String combineRegexPairs(ArrayList<String> pairs) {
     StringBuffer value = new StringBuffer();
@@ -80,7 +73,8 @@ public class MlcpUtil {
     return value.toString();
   }
 
-  /** Clears out options related to transforms
+  /** Clears out options related to transforms.
+   * @param options the map to clear
    */
   public static void clearOptionsForTransforms(Map<String,String> options) {
     options.remove(ConfigConstants.TRANSFORM_MODULE);
@@ -89,9 +83,11 @@ public class MlcpUtil {
     options.remove(ConfigConstants.TRANSFORM_PARAM);
   }
 
-  /** Converts a ModuleTransform or AdhocTransform into the equivalent mlcp command-line options
+  /** Converts a ModuleTransform into the equivalent mlcp command-line options
+   * @param transform the configured trasnform from which to get values
+   * @return a Map with mlcp command-line options keys and values
    */
-  public static Map<String,String> optionsForTransforms(DataMovementTransform transform) {
+  public static Map<String,String> optionsForTransforms(DataMovementTransform<?> transform) {
     LinkedHashMap<String,String> options = new LinkedHashMap<>();
     if ( transform instanceof ModuleTransform ) {
       ModuleTransform moduleTransform = (ModuleTransform) transform;
@@ -100,14 +96,14 @@ public class MlcpUtil {
       if ( moduleTransform.getFunctionNamespace() != null ) {
         options.put(ConfigConstants.TRANSFORM_NAMESPACE, moduleTransform.getFunctionNamespace() );
       }
-    } else if ( transform instanceof AdhocTransform ) {
+    } else {
       throw new IllegalStateException("Not yet implemented in mlcp layer");
     }
     options.putAll( optionsForTransformParams(transform) );
     return options;
   }
 
-  private static Map<String,String> optionsForTransformParams(DataMovementTransform transform) {
+  private static Map<String,String> optionsForTransformParams(DataMovementTransform<?> transform) {
     LinkedHashMap<String,String> options = new LinkedHashMap<>();
     // if there are custom transform parameters to send
     if ( transform != null && transform.size() > 0 ) {
@@ -125,7 +121,7 @@ public class MlcpUtil {
             for ( String value : values ) {
               jsonArray.add(value);
             }
-            jsonObject.put(key, jsonArray);
+            jsonObject.set(key, jsonArray);
           }
         }
       }

@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.mlcp;
 
-import com.marklogic.client.query.CtsQueryDefinition;
+import com.marklogic.datamovement.DataMovementEvent;
 
-public interface ModuleTransform extends DataMovementTransform<ModuleTransform> {
-  public String getModulePath();
-  public String getFunctionName();
-  public String getFunctionNamespace();
+public interface ImportEvent extends DataMovementEvent {
+  public String getTargetUri();
+  public String getSourceUri();
+  public String getZipEntryName();
+  public long getLineNumber();
+  public long getColumnNumber();
 }

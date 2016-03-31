@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.marklogic.datamovement;
+package com.marklogic.datamovement.mlcp;
 
-import com.marklogic.client.query.CtsQueryDefinition;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-public interface DeleteDefinition extends JobDefinition<DeleteDefinition> {
-  public DeleteDefinition query(CtsQueryDefinition query);
-  public DeleteDefinition onBatchSuccess(BatchListener<DeleteEvent> listener);
-  public DeleteDefinition onBatchFailure(BatchFailureListener<DeleteEvent> listener);
+public interface DataMovementTransform<T extends DataMovementTransform<T>> extends Map<String,List<String>> {
+  public T addParameter(String name, String... values);
+  public int size();
+  @Override
+  public Set<String> keySet();
 }
-

@@ -15,8 +15,8 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.DataMovementTransform;
-import com.marklogic.datamovement.JobDefinition;
+import com.marklogic.datamovement.mlcp.DataMovementTransform;
+import com.marklogic.datamovement.mlcp.JobDefinition;
 import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.client.query.CtsQueryDefinition;
 import com.marklogic.client.util.EditableNamespaceContext;
@@ -59,6 +59,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
 
   public JobDefinitionImpl() {}
 
+  @SuppressWarnings("unchecked")
   // Needed by all
   public T withJobName(String jobName) {
     this.jobName = jobName;
@@ -404,6 +405,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return transform;
   }
 
+  @SuppressWarnings("unchecked")
   // Needed by all
   /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
@@ -415,6 +417,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return (T) this;
   }
 
+  @SuppressWarnings("unchecked")
   // Needed by all
   /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
@@ -465,6 +468,7 @@ public class JobDefinitionImpl<T extends JobDefinition<T>>
     return options;
   }
 
+  @SuppressWarnings("unchecked")
   /** All option names must match mlcp command-line options (without the preceeding hyphen).
    */
   // Needed by all

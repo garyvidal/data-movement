@@ -17,23 +17,16 @@ package com.marklogic.datamovement.test;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
-import com.marklogic.client.document.GenericDocumentManager;
-import com.marklogic.client.io.FileHandle;
-import com.marklogic.client.io.Format;
 import com.marklogic.client.query.CtsQueryDefinition;
-import com.marklogic.datamovement.CopyDefinition;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportDefinition;
+import com.marklogic.datamovement.mlcp.CopyDefinition;
 
 public class CopyTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();

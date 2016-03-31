@@ -17,6 +17,10 @@ package com.marklogic.datamovement;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.query.QueryDefinition;
+import com.marklogic.datamovement.mlcp.CopyDefinition;
+import com.marklogic.datamovement.mlcp.ExportDefinition;
+import com.marklogic.datamovement.mlcp.ImportDefinition;
+import com.marklogic.datamovement.mlcp.ModuleTransform;
 import com.marklogic.datamovement.impl.CopyDefinitionImpl;
 import com.marklogic.datamovement.impl.ExportDefinitionImpl;
 import com.marklogic.datamovement.impl.ImportDefinitionImpl;
@@ -55,12 +59,6 @@ public class DataMovementManager {
     return service.startJob(def);
   }
   public JobTicket startJob(CopyDefinition def) {
-    return service.startJob(def);
-  }
-  public JobTicket startJob(UpdateDefinition def) {
-    return service.startJob(def);
-  }
-  public JobTicket startJob(DeleteDefinition def) {
     return service.startJob(def);
   }
 
@@ -106,30 +104,12 @@ public class DataMovementManager {
     return new CopyDefinitionImpl();
   }
 
-  public UpdateDefinition newUpdateDefinition() {
-    //return new UpdateDefinitionImpl();
-    // TODO: implement
-    return null;
-  }
-
-  public DeleteDefinition newDeleteDefinition() {
-    //return new DeleteDefinitionImpl();
-    // TODO: implement
-    return null;
-  }
-
   public ModuleTransform newModuleTransform(String modulePath, String functionName) {
     return new ModuleTransformImpl(modulePath, functionName, null);
   }
 
   public ModuleTransform newModuleTransform(String modulePath, String functionName, String functionNamespace) {
     return new ModuleTransformImpl(modulePath, functionName, functionNamespace);
-  }
-
-  public AdhocTransform newAdhocTransform() {
-    //return new AdhocTransformImpl();
-    // TODO: implement
-    return null;
   }
 
   private ForestConfiguration getForestConfig() {

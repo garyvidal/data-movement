@@ -15,17 +15,18 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.datamovement.DataMovementTransform;
+import com.marklogic.datamovement.mlcp.DataMovementTransform;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class DataMovementTransformImpl<T extends DataMovementTransform<T>>
   extends HashMap<String,List<String>>
   implements DataMovementTransform<T>
 {
+  @SuppressWarnings("unchecked")
   public T addParameter(String name, String... newValues) {
     List<String> existingValues = get(name);
     if ( existingValues == null ) {

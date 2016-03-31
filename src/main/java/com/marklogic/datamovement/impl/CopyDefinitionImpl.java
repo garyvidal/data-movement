@@ -15,20 +15,12 @@
  */
 package com.marklogic.datamovement.impl;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.stream.Collectors;
-
 import com.marklogic.client.DatabaseClient;
-import com.marklogic.client.query.CtsQueryDefinition;
-import com.marklogic.client.util.EditableNamespaceContext;
-import com.marklogic.client.util.IterableNamespaceContext;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.BatchFailureListener;
 import com.marklogic.datamovement.BatchListener;
-import com.marklogic.datamovement.DataMovementTransform;
-import com.marklogic.datamovement.CopyDefinition;
-import com.marklogic.datamovement.CopyEvent;
+import com.marklogic.datamovement.mlcp.CopyDefinition;
+import com.marklogic.datamovement.mlcp.CopyEvent;
 
 public class CopyDefinitionImpl
   extends JobDefinitionImpl<CopyDefinition>

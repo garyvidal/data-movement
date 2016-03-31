@@ -15,8 +15,7 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.client.query.CtsQueryDefinition;
-import com.marklogic.datamovement.ModuleTransform;
+import com.marklogic.datamovement.mlcp.ModuleTransform;
 
 public class ModuleTransformImpl extends DataMovementTransformImpl<ModuleTransform> implements ModuleTransform {
   private String modulePath;
@@ -39,4 +38,3 @@ public class ModuleTransformImpl extends DataMovementTransformImpl<ModuleTransfo
     return functionNamespace;
   }
 }
-

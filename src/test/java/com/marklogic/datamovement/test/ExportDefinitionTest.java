@@ -22,19 +22,14 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import com.marklogic.client.document.ServerTransform;
-import com.marklogic.client.io.Format;
 import com.marklogic.client.query.CtsQueryDefinition;
 import com.marklogic.client.util.EditableNamespaceContext;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ExportDefinition;
-import com.marklogic.datamovement.ImportDefinition.DataType;
-import com.marklogic.datamovement.ImportDefinition.InputFileType;
-import com.marklogic.datamovement.ImportDefinition.SequenceFileImportDefinition.SequenceValueType;
-import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.JobTicket;
+import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.impl.ExportDefinitionImpl;
-import com.marklogic.datamovement.impl.ImportDefinitionImpl;
+import com.marklogic.datamovement.mlcp.ExportDefinition;
 
 /** This test just confirms that the mlcp command line options get set to what we want them to be.
  * This test doesn't talk to the server.

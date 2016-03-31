@@ -15,20 +15,17 @@
  */
 package com.marklogic.datamovement.test;
 
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
-import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ImportDefinition;
-import com.marklogic.datamovement.ModuleTransform;
-import com.marklogic.datamovement.impl.MlcpUtil;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+import org.junit.Test;
 
 import com.marklogic.contentpump.ConfigConstants;
-
-import java.util.ArrayList;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
+import com.marklogic.datamovement.DataMovementManager;
+import com.marklogic.datamovement.impl.MlcpUtil;
+import com.marklogic.datamovement.mlcp.ModuleTransform;
 
 public class MlcpUtilTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();

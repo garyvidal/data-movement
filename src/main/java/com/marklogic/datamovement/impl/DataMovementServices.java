@@ -25,17 +25,15 @@ import com.marklogic.client.eval.EvalResult;
 import com.marklogic.client.eval.EvalResultIterator;
 import com.marklogic.contentpump.ContentPump;
 import com.marklogic.contentpump.utilities.OptionsFileUtil;
-import com.marklogic.datamovement.CopyDefinition;
+import com.marklogic.datamovement.mlcp.CopyDefinition;
 import com.marklogic.datamovement.DataMovementException;
-import com.marklogic.datamovement.DeleteDefinition;
-import com.marklogic.datamovement.ExportDefinition;
-import com.marklogic.datamovement.ImportDefinition;
-import com.marklogic.datamovement.JobDefinition;
+import com.marklogic.datamovement.mlcp.ExportDefinition;
+import com.marklogic.datamovement.mlcp.ImportDefinition;
+import com.marklogic.datamovement.mlcp.JobDefinition;
 import com.marklogic.datamovement.JobReport;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.QueryHostBatcher;
-import com.marklogic.datamovement.UpdateDefinition;
 import com.marklogic.datamovement.WriteHostBatcher;
 
 public class DataMovementServices {
@@ -87,14 +85,6 @@ public class DataMovementServices {
   }
   public JobTicket startJob(CopyDefinition def) {
     return startMlcpJob(def, JobTicket.JobType.COPY);
-  }
-  public JobTicket startJob(UpdateDefinition def) {
-    // TODO: implement
-    return null;
-  }
-  public JobTicket startJob(DeleteDefinition def) {
-    // TODO: implement
-    return null;
   }
 
   public JobTicket startJob(WriteHostBatcher batcher) {

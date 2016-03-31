@@ -28,7 +28,7 @@ import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
 import com.marklogic.contentpump.ConfigConstants;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.JobDefinition;
+import com.marklogic.datamovement.mlcp.JobDefinition;
 import com.marklogic.datamovement.JobTicket;
 import com.marklogic.datamovement.JobTicket.JobType;
 import com.marklogic.datamovement.impl.JobDefinitionImpl;

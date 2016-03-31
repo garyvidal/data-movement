@@ -36,7 +36,7 @@ import com.marklogic.client.query.CtsQueryDefinition;
 import com.marklogic.client.query.DeleteQueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.datamovement.DataMovementManager;
-import com.marklogic.datamovement.ExportDefinition;
+import com.marklogic.datamovement.mlcp.ExportDefinition;
 import com.marklogic.datamovement.WriteHostBatcher;
 
 public class ExportTest {
