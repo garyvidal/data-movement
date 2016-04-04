@@ -18,6 +18,9 @@ package com.marklogic.datamovement.impl;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.marklogic.client.DatabaseClient;
@@ -38,6 +41,7 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
   private ForestConfiguration forestConfig;
   private ArrayList<BatchListener<String>> urisReadyListeners = new ArrayList<>();
   private ArrayList<FailureListener<QueryHostException>> failureListeners = new ArrayList<>();
+  private QueryThreadPoolExecutor threadPool;
 
   public QueryHostBatcherImpl(QueryDefinition query, ForestConfiguration forestConfig) {
     super();
@@ -55,20 +59,48 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
     return this;
   }
 
+  public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+    requireJobStarted();
+    return threadPool.awaitTermination(timeout, unit);
+  }
+
+  public boolean isTerminated() {
+    requireJobStarted();
+    return threadPool.isTerminated();
+  }
+
+  public boolean isTerminating() {
+    requireJobStarted();
+    return threadPool.isTerminating();
+  }
+
+  private void requireJobStarted() {
+    if ( threadPool == null ) {
+      throw new IllegalStateException("Job not started. First call DataMovementManager.startJob(QueryHostBatcher)");
+    }
+  }
+
   void start() {
+    threadPool = new QueryThreadPoolExecutor(1, this);
     HashMap<String,Forest> oneForestPerHost = new HashMap<>();
     Forest[] forests = forestConfig.listForests();
     for ( Forest forest : forests ) {
       oneForestPerHost.put(forest.getHostName(), forest);
     }
+    // default threadCount to hostCount
+    int hostCount = oneForestPerHost.size();
+    int threadCount = getThreadCount();
+    if ( threadCount <= 0 ) threadCount = hostCount;
+    threadPool.setCorePoolSize(threadCount);
+    threadPool.setMaximumPoolSize(threadCount);
     for ( String host : oneForestPerHost.keySet() ) {
       final Forest forest = oneForestPerHost.get(host);
       final QueryDefinition finalQuery = query;
       final AtomicLong batchNumber = new AtomicLong();
       // right now this just launches one thread per host
       // TODO: (maybe) respect thread count
-      new Thread(
-        new Runnable() { public void run() {
+      Runnable runnable = new Runnable() {
+        public void run() {
           DatabaseClient client = null;
           try {
             long resultsSoFar = 0;
@@ -100,8 +132,26 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
               listener.processFailure(client, new QueryHostException(null, t));
             }
           }
-        }}
-      ).start();
+        }
+      };
+      threadPool.execute(runnable);
+    }
+    threadPool.shutdown();
+  }
+
+  public static class QueryThreadPoolExecutor extends ThreadPoolExecutor {
+    private Object objectToNotifyFrom;
+
+    public QueryThreadPoolExecutor(int threadCount, Object objectToNotifyFrom) {
+      super(threadCount, threadCount, 0, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+      this.objectToNotifyFrom = objectToNotifyFrom;
+    }
+
+    protected void terminated() {
+      super.terminated();
+      synchronized(objectToNotifyFrom) {
+        objectToNotifyFrom.notifyAll();
+      }
     }
   }
 }

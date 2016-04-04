@@ -20,6 +20,8 @@ import static org.junit.Assert.assertEquals;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -29,15 +31,18 @@ import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
 import com.marklogic.client.io.DocumentMetadataHandle;
+import com.marklogic.client.document.DocumentManager;
+import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.ExportToWriterListener;
+import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.datamovement.WriteHostBatcher;
 
 public class ExportToWriterListenerTest {
   private static DataMovementManager moveMgr = DataMovementManager.newInstance();
   private static DatabaseClient client =
-    DatabaseClientFactory.newClient("localhost", 8000, "Documents", "admin", "admin", Authentication.DIGEST);
+    DatabaseClientFactory.newClient("localhost", 8012, "admin", "admin", Authentication.DIGEST);
   private static String collection = "ExportToWriterListenerTest";
   private static String docContents = "doc contents";
   private static String outputFile = "target/ExportToWriterListenerTest.txt";
@@ -70,25 +75,35 @@ public class ExportToWriterListenerTest {
     assertEquals( "There should be 100 documents in the db",
       client.newDocumentManager().read(uris).size(), 100 );
 
+    final AtomicInteger i = new AtomicInteger();
+    QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     FileWriter writer = new FileWriter(outputFile);
     try {
-
-      moveMgr.startJob(
-        moveMgr.newQueryHostBatcher(
-          new StructuredQueryBuilder().collection(collection)
-        )
-        .onUrisReady(
-          new ExportToWriterListener(writer)
-            .withRecordSuffix("\n")
-        )
-        .onQueryFailure(
-          (client, throwable) -> {
-            throwable.printStackTrace();
+      ExportToWriterListener exportListener = new ExportToWriterListener(writer)
+        .withRecordSuffix("\n")
+        .withMetadataCategory(DocumentManager.Metadata.COLLECTIONS)
+        .onGenerateOutput(
+          record -> {
+            i.incrementAndGet();
+            String collection = record.getMetadata(new DocumentMetadataHandle()).getCollections().iterator().next();
+            String contents = record.getContentAs(String.class);
+            return collection + "," + contents;
           }
-        )
-      );
-      // rest for a second and let the export finish
-      Thread.sleep(3000);
+        );
+
+      QueryHostBatcher queryJob =
+        moveMgr.newQueryHostBatcher(query)
+          .withThreadCount(2)
+          .withBatchSize(100)
+          .onUrisReady(exportListener)
+          .onQueryFailure( (client, throwable) -> throwable.printStackTrace() );
+      moveMgr.startJob( queryJob );
+
+      // wait for the export to finish
+      boolean finished = queryJob.awaitTermination(3, TimeUnit.MINUTES);
+      if ( finished == false ) {
+        throw new IllegalStateException("ERROR: Job did not finish within three minutes");
+      }
     } finally {
       writer.close();
     }
@@ -109,5 +124,3 @@ public class ExportToWriterListenerTest {
     }
   }
 }
-
-

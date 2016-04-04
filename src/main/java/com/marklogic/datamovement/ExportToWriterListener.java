@@ -17,7 +17,7 @@ package com.marklogic.datamovement;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.util.Set;
+import java.util.HashSet;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.document.DocumentManager;
@@ -35,8 +35,9 @@ public class ExportToWriterListener implements BatchListener<String> {
   private String prefix;
   private ServerTransform transform;
   private QueryManager.QueryView view;
-  private Set<DocumentManager.Metadata> categories;
+  private HashSet<DocumentManager.Metadata> categories = new HashSet<>();
   private Format nonDocumentFormat;
+  private OutputListener outputListener;
 
   public ExportToWriterListener(Writer writer) {
     this.writer = writer;
@@ -57,7 +58,11 @@ public class ExportToWriterListener implements BatchListener<String> {
         } else {
           try {
             if ( prefix != null ) writer.write( prefix );
-            writer.write( doc.getContent(new StringHandle()).get() );
+            if ( outputListener != null ) {
+              writer.write( outputListener.generateOutput(doc) );
+            } else {
+              writer.write( doc.getContent(new StringHandle()).get() );
+            }
             if ( suffix != null ) writer.write( suffix );
           } catch (IOException e) {
               throw new DataMovementException("Failed to write document \"" + doc.getUri() + "\"", e);
@@ -87,13 +92,22 @@ public class ExportToWriterListener implements BatchListener<String> {
     return this;
   }
 
-  public ExportToWriterListener withMetadataCategories(Set<DocumentManager.Metadata> categories) {
-    this.categories = categories;
+  public ExportToWriterListener withMetadataCategory(DocumentManager.Metadata category) {
+    this.categories.add(category);
     return this;
   }
 
   public ExportToWriterListener withNonDocumentFormat(Format nonDocumentFormat) {
     this.nonDocumentFormat = nonDocumentFormat;
     return this;
+  }
+
+  public ExportToWriterListener onGenerateOutput(OutputListener listener) {
+    this.outputListener = listener;
+    return this;
+  }
+
+  public static interface OutputListener {
+    public String generateOutput(DocumentRecord record);
   }
 }

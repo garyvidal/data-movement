@@ -15,7 +15,12 @@
  */
 package com.marklogic.datamovement;
 
+import java.util.concurrent.TimeUnit;
+
 public interface QueryHostBatcher extends HostBatcher<QueryHostBatcher> {
   public QueryHostBatcher onUrisReady(BatchListener<String> listener);
   public QueryHostBatcher onQueryFailure(FailureListener<QueryHostException> listener);
+  public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException;
+  public boolean isTerminated();
+  public boolean isTerminating();
 }
