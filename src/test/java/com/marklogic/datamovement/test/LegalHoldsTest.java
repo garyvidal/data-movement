@@ -18,15 +18,18 @@ package com.marklogic.datamovement.test;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import static org.junit.Assert.fail;
 
 import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.JobTicket;
-
+import com.marklogic.datamovement.QueryHostBatcher;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
+
 import static com.marklogic.client.DatabaseClientFactory.Authentication.BASIC;
+
 import com.marklogic.client.ResourceNotFoundException;
 import com.marklogic.client.admin.ExtensionLibrariesManager;
 import com.marklogic.client.document.DocumentPage;
@@ -41,6 +44,7 @@ import com.marklogic.client.query.QueryDefinition;
 import com.marklogic.client.query.QueryManager;
 import com.marklogic.client.query.StructuredQueryBuilder;
 import com.marklogic.client.query.StructuredQueryDefinition;
+
 import static com.marklogic.client.query.StructuredQueryBuilder.Operator;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -53,18 +57,18 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Calendar;
+import java.util.concurrent.TimeUnit;
+
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.namespace.QName;
 
 public class LegalHoldsTest {
   private static String directory = "/LegalHoldsTest/";
-  private static JSONDocumentManager docMgr;
   private static ObjectMapper mapper = new ObjectMapper();
 
   @BeforeClass
   public static void beforeClass() {
       Common.connectEval();
-      docMgr = Common.client.newJSONDocumentManager();
       //System.setProperty("org.apache.commons.logging.simplelog.log.org.apache.http.wire", "debug");
   }
   @AfterClass
@@ -92,7 +96,14 @@ public class LegalHoldsTest {
    * deleted and why his job failed.
    */
   public void scenario10() throws Exception {
-    setup();
+    // install the filterUrisReferencedByHolds module
+    installModule();
+    // upload sample json docs.  Only file5.json matches all criteria.
+    uploadData();
+
+    // query for docs matching most of our legal holds criteria
+    // but recognize this query can't filter out docs referenced by docs
+    // with legal holds
     Calendar date = Calendar.getInstance();
     // change date to now minus seven years
     date.roll(Calendar.YEAR, -7);
@@ -110,19 +121,36 @@ public class LegalHoldsTest {
             Operator.LE, sevenYearsAgo
             )
           );
-    QueryManager queryMgr = Common.client.newQueryManager();
-    long start = 1;
-    DocumentPage results = docMgr.search(query, start);
-    ArrayNode uris = mapper.createArrayNode();
-    for ( DocumentRecord doc : results ) {
-      uris.add( doc.getUri() );
-    }
-    String urisToDelete =
-      Common.client.newServerEval()
-      .modulePath("/ext" + directory + "filterUrisReferencedByHolds.sjs")
-      .addVariable("uris", new JacksonHandle(uris))
-      .evalAs(String.class);
-    docMgr.delete(urisToDelete.split(","));
+
+    // walk through all batches of docs matching our query
+    DataMovementManager moveMgr = DataMovementManager.newInstance().setClient(Common.client);
+    QueryHostBatcher batcher = moveMgr.newQueryHostBatcher(query)
+      .onUrisReady(
+        (forestClient, batch) -> {
+          ArrayNode uris = mapper.createArrayNode();
+          for ( String uri : batch.getItems() ) {
+            uris.add( uri );
+          }
+          // for each batch, filter out any matches referenced by docs
+          // with legal holds
+          String urisToDelete =
+            forestClient.newServerEval()
+              .modulePath("/ext" + directory + "filterUrisReferencedByHolds.sjs")
+              .addVariable("uris", new JacksonHandle(uris))
+              .evalAs(String.class);
+
+          // now that we have a clean list, delete them
+          forestClient.newDocumentManager().delete(urisToDelete.split(","));
+        }
+      )
+      .onQueryFailure( (client, throwable) -> throwable.printStackTrace() );
+    moveMgr.startJob(batcher);
+
+    // give this process up to 1 day to finish
+    batcher.awaitTermination(1, TimeUnit.DAYS);
+
+    JSONDocumentManager docMgr = Common.client.newJSONDocumentManager();
+    // validate that we didn't delete the docs that didn't match
     try {
       docMgr.readAs(directory + "file1.json", String.class);
       docMgr.readAs(directory + "file2.json", String.class);
@@ -136,11 +164,6 @@ public class LegalHoldsTest {
       fail("found file5.json which should not be there");
     } catch (ResourceNotFoundException e) {
     }
-  }
-
-  private void setup() throws Exception {
-    installModule();
-    uploadData();
   }
 
   private void installModule() throws Exception {
@@ -157,6 +180,7 @@ public class LegalHoldsTest {
   }
 
   private void uploadData() throws Exception {
+    JSONDocumentManager docMgr = Common.client.newJSONDocumentManager();
     File folder = new File("src/test/resources/legal_holds/data");
     for ( Path path: Files.newDirectoryStream(folder.toPath(), "*.json") ) {
       File file = path.toFile();
