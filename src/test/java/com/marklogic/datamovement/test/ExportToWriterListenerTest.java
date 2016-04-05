@@ -73,9 +73,9 @@ public class ExportToWriterListenerTest {
 
     // verify that the files made it to the db
     assertEquals( "There should be 100 documents in the db",
-      client.newDocumentManager().read(uris).size(), 100 );
+      100, client.newDocumentManager().read(uris).size() );
 
-    final AtomicInteger i = new AtomicInteger();
+    // export to a csv with uri, collection, and contents columns
     QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     FileWriter writer = new FileWriter(outputFile);
     try {
@@ -84,17 +84,17 @@ public class ExportToWriterListenerTest {
         .withMetadataCategory(DocumentManager.Metadata.COLLECTIONS)
         .onGenerateOutput(
           record -> {
-            i.incrementAndGet();
+            String uri = record.getUri();
             String collection = record.getMetadata(new DocumentMetadataHandle()).getCollections().iterator().next();
             String contents = record.getContentAs(String.class);
-            return collection + "," + contents;
+            return uri + "," + collection + "," + contents;
           }
         );
 
       QueryHostBatcher queryJob =
         moveMgr.newQueryHostBatcher(query)
-          .withThreadCount(2)
-          .withBatchSize(100)
+          .withThreadCount(5)
+          .withBatchSize(10)
           .onUrisReady(exportListener)
           .onQueryFailure( (client, throwable) -> throwable.printStackTrace() );
       moveMgr.startJob( queryJob );
