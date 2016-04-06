@@ -63,7 +63,7 @@ public class DeleteListenerTest {
 
     // verify that the files made it to the db
     assertEquals( "There should be 100 documents in the db",
-      client.newDocumentManager().read(uris).size(), 100 );
+      100, client.newDocumentManager().read(uris).size() );
 
     moveMgr.startJob(
       moveMgr.newQueryHostBatcher(
@@ -75,7 +75,7 @@ public class DeleteListenerTest {
 
     // validate that the docs were deleted
     assertEquals( "There should be 0 documents in the db",
-      client.newDocumentManager().read(uris).size(), 100 );
+      100, client.newDocumentManager().read(uris).size() );
   }
 }
 
