@@ -1,0 +1,4 @@
+rootProject.name = 'data-movement-parent'
+include ':data-movement'
+include ':data-movement-functionaltests'
+include ':data-movement-examples'
