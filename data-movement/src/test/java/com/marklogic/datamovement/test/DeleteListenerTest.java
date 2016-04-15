@@ -78,4 +78,3 @@ public class DeleteListenerTest {
       client.newDocumentManager().read(uris).size(), 100 );
   }
 }
-
