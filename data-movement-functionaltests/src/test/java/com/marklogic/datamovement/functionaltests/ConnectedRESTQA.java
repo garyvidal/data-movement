@@ -41,6 +41,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Properties;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -83,18 +84,25 @@ import java.security.cert.X509Certificate;
  */
 public abstract class ConnectedRESTQA {
 	private String serverName = "";
-	private static String restServerName = "REST-Java-Client-API-Server";
-	private static String restSslServerName = "REST-Java-Client-API-SSL-Server";
-	public static final String SSL_ENABLED = "rest.sslset";
-	public static final String HTTPS_PORT = "https.port";
-	public static final String HTTP_PORT = "http.port";
-	public static final String HOST_NAME = "rest.host";
-	public static final String SSL_HOST_NAME = "rest.sslhost";
-	public static final String USER_PROP = "rest.user";
-	public static final String PASS_PROP = "rest.pass";
-	public static final String ML_CERTIFICATE_PASSWD = "welcome";
-    public static final String ML_CERTIFICATE_FILE = "user.p12"; 
-    public static final String ML_CERTIFICATE_PATH = "src/test/java/com/marklogic/client/functionaltest/data/";
+	private static String restServerName = null;
+	private static String restSslServerName = null;
+	private static String ssl_enabled = null;
+	private static String https_port = null;
+	private static String http_port = null;
+	private static String host_name = null;
+	private static String ssl_host_name = null;
+	private static String admin_user = null;
+	private static String admin_password = null;
+	private static String mlRestWriteUser = null;
+	private static String mlRestWritePassword = null;
+	private static String mlRestAdminUser = null;
+	private static String mlRestAdminPassword = null;
+	private static String mlRestReadUser = null;
+	private static String mlRestReadPassword = null;
+	private static String ml_certificate_password = null;
+	private static String ml_certificate_file = null; 
+	private static String ml_certificate_path = null;
+	private static String mlDataConfigDirPath = null;
 
 	SSLContext sslContext = null;
 
@@ -2194,42 +2202,129 @@ public abstract class ConnectedRESTQA {
 		return (getSslEnabled().trim().equalsIgnoreCase("true")?getHttpsPort():getHttpPort()); 		
 	}
 		
-	private static String getPropertyValue(String prop) {
-        String value = System.getProperty(prop);
+	public static void loadGradleProperties() {
+		Properties property = new Properties();
+    	InputStream input = null;
 
-        if (value == null) {
-            throw new RuntimeException("Property " + prop + " not set");
-        }
+    	try {
 
-        return value;
-    }
+    	    input = property.getClass().getResourceAsStream("/test.properties");
+
+    	    // load a properties file
+    	    property.load(input);
+
+    	} catch (IOException ex) {
+    	    ex.printStackTrace();
+    	    throw new RuntimeException(ex);
+    	}
+    	// Set the variable values. 
+    	
+    	// Rest App server names and ports. 
+        restServerName = property.getProperty("mlAppServerName");
+    	restSslServerName = property.getProperty("mlAppServerSSLName");
+    	
+    	https_port = property.getProperty("httpsPort");
+    	http_port = property.getProperty("httpPort");
+
+    	// Machine names where ML Server runs
+    	host_name = property.getProperty("restHost");
+    	ssl_host_name = property.getProperty("restSSLHost");
+    	
+    	// Users
+    	admin_user = property.getProperty("mlAdminUser");
+    	admin_password = property.getProperty("mlAdminPassword");
+    	
+    	mlRestWriteUser = property.getProperty("mlRestWriteUser");
+    	mlRestWritePassword = property.getProperty("mlRestWritePassword");
+    	
+    	mlRestAdminUser = property.getProperty("mlRestAdminUser");
+    	mlRestAdminPassword = property.getProperty("mlRestAdminPassword");
+    	
+    	mlRestReadUser = property.getProperty("mlRestReadUser");
+    	mlRestReadPassword = property.getProperty("mlRestReadPassword");
+    	
+    	// Security and Certificate properties.
+    	ssl_enabled = property.getProperty("restSSLset");
+    	ml_certificate_password = property.getProperty("ml_certificate_password");
+    	ml_certificate_file = property.getProperty("ml_certificate_file");
+    	ml_certificate_path = property.getProperty("ml_certificate_path"); 
+    	mlDataConfigDirPath = property.getProperty("mlDataConfigDirPath");
+    }	
 	
-	public static String getUser() {
-        return (getPropertyValue(USER_PROP));
+	public static String getAdminUser() {
+        return admin_user;
     }
 
-    public static String getPass() {
-        return (getPropertyValue(PASS_PROP));
+    public static String getAdminPassword() {
+        return admin_password;
     }
     
+    public static String getRestWriterUser() {
+        return mlRestWriteUser;
+    }
+
+    public static String getRestWriterPassword() {
+        return mlRestWritePassword;
+    }
+    
+    public static String getRestAdminUser() {
+        return mlRestAdminUser;
+    }
+
+    public static String getRestAdminPassword() {
+        return mlRestAdminPassword;
+    }
+    
+    public static String getRestReaderUser() {
+        return mlRestReadUser;
+    }
+
+    public static String getRestReaderPassword() {
+        return mlRestReadPassword;
+    }
     public static String getSslEnabled() {
-        return (getPropertyValue(SSL_ENABLED));
+        return ssl_enabled;
+    }
+    
+    public static int getRestAppServerPort() {
+        return (IsSecurityEnabled() ? getHttpsPort():getHttpPort());
+    }
+    
+    // Returns the name of the REST Application server name. Currently on single node.
+    public static String getRestAppServerName() {
+        return (IsSecurityEnabled() ? getSslAppServerName(): getAppServerName());
+    }
+    
+ // Returns the Host name where REST Application server runs. Currently on single node.
+    public static String getRestAppServerHostName() {
+        return (IsSecurityEnabled() ? getSslServer(): getServer());
     }
     
     public static int getHttpsPort() {
-        return (Integer.parseInt(getPropertyValue(HTTPS_PORT)));
+        return (Integer.parseInt(https_port));
     }
     
     public static int getHttpPort() {
-        return (Integer.parseInt(getPropertyValue(HTTP_PORT)));
+        return (Integer.parseInt(http_port));
     }
-    
+        
     public static String getServer() {
-        return (getPropertyValue(HOST_NAME));
+        return host_name;
     }
     
     public static String getSslServer() {
-        String prop = System.getProperty(SSL_HOST_NAME);
-        return ((prop == null) ? getServer() : prop);
+       return ssl_host_name;
     }
+    
+    public static String getAppServerName() {
+        return restServerName;
+    }
+    
+    public static String getSslAppServerName() {
+       return restSslServerName;
+    }
+    
+    public static String getDataConfigDirPath() {
+        return mlDataConfigDirPath;
+     }    
 }

@@ -127,7 +127,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		InputStreamHandle contentHandle = new InputStreamHandle();
 
 		// get the file
-		InputStream inputStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		InputStream inputStream = new FileInputStream(getDataConfigDirPath() + filename);
 		
 		// set uri
 		String docId = uri + filename;
@@ -159,7 +159,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		InputStreamHandle contentHandle = new InputStreamHandle();
 
 		// get the file
-		InputStream inputStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		InputStream inputStream = new FileInputStream(getDataConfigDirPath() + filename);
 		
 		// set uri
 		String docId = uri + filename;
@@ -182,7 +182,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		InputStreamHandle contentHandle = new InputStreamHandle();
 
 		// get the file
-		InputStream inputStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		InputStream inputStream = new FileInputStream(getDataConfigDirPath() + filename);
 		
 		// set uri
 		String docId = uri + filename;
@@ -289,7 +289,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		InputStreamHandle contentHandle = new InputStreamHandle();
 
 		// get the file
-		InputStream inputStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		InputStream inputStream = new FileInputStream(getDataConfigDirPath() + filename);
 		
 		// set uri
 		String docId = uri;
@@ -313,7 +313,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 	public void writeDocumentUsingBytesHandle(DatabaseClient client, String filename, String uri, String type) throws IOException
 	{
 		// get the content to bytes
-		File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);		 
+		File file = new File(getDataConfigDirPath() + filename);		 
         FileInputStream fis = new FileInputStream(file);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
@@ -355,7 +355,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 	public void writeDocumentUsingBytesHandle(DatabaseClient client, String filename, String uri, DocumentMetadataHandle metadataHandle, String type) throws IOException
 	{
 		// get the content to bytes
-		File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);		 
+		File file = new File(getDataConfigDirPath() + filename);		 
         FileInputStream fis = new FileInputStream(file);
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         byte[] buf = new byte[1024];
@@ -397,7 +397,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
         public void writeDocumentUsingStringHandle(DatabaseClient client, String filename, String uri, DocumentMetadataHandle metadataHandle, String type) throws IOException
         {
                 // acquire the content
-                File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+                File file = new File(getDataConfigDirPath() + filename);
         FileInputStream fis = new FileInputStream(file);
             Scanner scanner = new Scanner(fis).useDelimiter("\\Z");
             String readContent = scanner.next();
@@ -431,7 +431,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
         public void writeDocumentUsingStringHandle(DatabaseClient client, String filename, String uri, String type) throws IOException
         {
                 // acquire the content
-                File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+                File file = new File(getDataConfigDirPath() + filename);
         FileInputStream fis = new FileInputStream(file);
             Scanner scanner = new Scanner(fis).useDelimiter("\\Z");
             String readContent = scanner.next();
@@ -478,7 +478,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
             // the callback receives the output stream
 			public void write(OutputStream out) throws IOException {
         		// acquire the content
-				InputStream docStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+				InputStream docStream = new FileInputStream(getDataConfigDirPath() + filename);
 				
         		// copy content to the output stream
         		byte[] buf = new byte[MAX_BUF];
@@ -512,7 +512,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
             // the callback receives the output stream
 			public void write(OutputStream out) throws IOException {
         		// acquire the content
-				InputStream docStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+				InputStream docStream = new FileInputStream(getDataConfigDirPath() + filename);
 				
         		// copy content to the output stream
         		byte[] buf = new byte[MAX_BUF];
@@ -546,7 +546,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
             // the callback receives the output stream
 			public void write(OutputStream out) throws IOException {
         		// acquire the content
-				InputStream docStream = new FileInputStream("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+				InputStream docStream = new FileInputStream(getDataConfigDirPath() + filename);
 				
         		// copy content to the output stream
         		byte[] buf = new byte[MAX_BUF];
@@ -580,7 +580,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		docMgr = documentManagerSelector(client, docMgr, type);	
 				
 		// acquire the content
-		BufferedReader docStream = new BufferedReader(new FileReader("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		BufferedReader docStream = new BufferedReader(new FileReader(getDataConfigDirPath() + filename));
 			 
 	    // create an identifier for the document
 		String docId = uri + filename;
@@ -612,7 +612,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		docMgr = documentManagerSelector(client, docMgr, type);	
 		
 		// acquire the content
-		BufferedReader docStream = new BufferedReader(new FileReader("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		BufferedReader docStream = new BufferedReader(new FileReader(getDataConfigDirPath() + filename));
 			 
 	    // create an identifier for the document
 		String docId = uri;
@@ -754,7 +754,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// acquire the content
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document content = docBuilder.parse(new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		Document content = docBuilder.parse(new File(getDataConfigDirPath() + filename));
 			 
 	    // create an identifier for the document
 		String docId = uri + filename;
@@ -807,7 +807,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// acquire the content
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document content = docBuilder.parse(new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		Document content = docBuilder.parse(new File(getDataConfigDirPath() + filename));
 			 
 	    // create an identifier for the document
 		String docId = uri;
@@ -887,7 +887,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		DocumentManager docMgr = null;
 		docMgr = documentManagerSelector(client, docMgr, type);
 
-		File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		File file = new File(getDataConfigDirPath() + filename);
 				
 	    // create an identifier for the document
 		String docId = uri + filename;
@@ -941,7 +941,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		DocumentManager docMgr = null;
 		docMgr = documentManagerSelector(client, docMgr, type);
 
-		File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+		File file = new File(getDataConfigDirPath() + filename);
 			    	 
 	    // create an identifier for the document
 		String docId = uri;
@@ -970,7 +970,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
             DocumentManager docMgr = null;
             docMgr = documentManagerSelector(client, docMgr, type);
 
-            File file = new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename);
+            File file = new File(getDataConfigDirPath() + filename);
             FileInputStream fis = new FileInputStream(file);
             Scanner scanner = new Scanner(fis).useDelimiter("\\Z");
             String readContent = scanner.next();
@@ -1042,7 +1042,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 	    DocumentManager docMgr = null;
 	    byte[] contentInByte = null;
 	    // variable to hold QA data directory path
-	    String dirpath = new String("src/test/java/com/marklogic/client/functionaltest/data/");
+	    String dirpath = new String(getDataConfigDirPath());
 	    
 	    docMgr = documentManagerSelector(client, docMgr, type);	
 	    
@@ -1156,7 +1156,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		ReaderHandle handle = new ReaderHandle();
 		
 		// write the files
-		BufferedReader docStream = new BufferedReader(new FileReader("src/test/java/com/marklogic/client/functionaltest/queryoptions/" + queryOptionName));
+		BufferedReader docStream = new BufferedReader(new FileReader(getDataConfigDirPath() + queryOptionName));
 		handle.set(docStream);
 			
 		//handle.setFormat(Format.XML);
@@ -1222,7 +1222,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		ReaderHandle handle = new ReaderHandle();
 		handle.setFormat(Format.JSON);
 		// write the files
-		BufferedReader docStream = new BufferedReader(new FileReader("src/test/java/com/marklogic/client/functionaltest/queryoptions/" + queryOptionName));
+		BufferedReader docStream = new BufferedReader(new FileReader(getDataConfigDirPath() + queryOptionName));
 		handle.set(docStream);
 		
 		// write the query options to the database in xml
@@ -1438,7 +1438,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// get xml document for expected result
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document expectedDoc = docBuilder.parse(new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		Document expectedDoc = docBuilder.parse(new File(getDataConfigDirPath() + filename));
 		return expectedDoc;
 	}
 	
@@ -1454,7 +1454,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// get json document for expected result
 		ObjectMapper mapper = new ObjectMapper();
 		JsonFactory jfactory = new JsonFactory();
-		JsonParser jParser = jfactory.createJsonParser(new File("src/test/java/com/marklogic/client/functionaltest/data/" + filename));
+		JsonParser jParser = jfactory.createJsonParser(new File(getDataConfigDirPath() + filename));
 		JsonNode expectedDoc = mapper.readTree(jParser);		
 		return expectedDoc;
 	}
@@ -1471,7 +1471,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// get json document for expected result
 		ObjectMapper mapper = new ObjectMapper();
 		JsonFactory jfactory = new JsonFactory();
-		JsonParser jParser = jfactory.createJsonParser(new File("src/test/java/com/marklogic/client/functionaltest/queryoptions/" + filename));
+		JsonParser jParser = jfactory.createJsonParser(new File(getDataConfigDirPath() + filename));
 		JsonNode expectedDoc = mapper.readTree(jParser);		
 		return expectedDoc;
 	}
@@ -1489,7 +1489,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// get xml document for expected result
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document expectedDoc = docBuilder.parse(new File("src/test/java/com/marklogic/client/functionaltest/keys/" + filename));
+		Document expectedDoc = docBuilder.parse(new File(getDataConfigDirPath() + "keys/" + filename));
 		return expectedDoc;
 	}
 	
@@ -1506,7 +1506,7 @@ public abstract class BasicJavaClientREST extends ConnectedRESTQA
 		// get xml document for expected result
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document metadataDoc = docBuilder.parse(new File("src/test/java/com/marklogic/client/functionaltest/metadata/" + filename));
+		Document metadataDoc = docBuilder.parse(new File(getDataConfigDirPath() + "metadata/" + filename));
 		return metadataDoc;
 	}
 	
