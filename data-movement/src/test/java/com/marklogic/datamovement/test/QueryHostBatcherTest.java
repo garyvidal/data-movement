@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -92,12 +93,22 @@ public class QueryHostBatcherTest {
 
     final StringBuffer urisReadyListenerWasRun = new StringBuffer();
     final StringBuffer failListenerWasRun = new StringBuffer();
+    final StringBuffer databaseName = new StringBuffer();
     QueryHostBatcher queryBatcher = moveMgr.newQueryHostBatcher(query)
       .onUrisReady(
         (client, batch) -> {
-System.out.println("DEBUG: [QueryHostBatcherTest] batch.getForest().getForestName()=[" + batch.getForest().getForestName() + "]");
-          urisReadyListenerWasRun.append("true");
-          assertEquals("There should be four items in the batch", 4, batch.getItems().length);
+          // append one period for each run.  This should run three times because
+          // there are three forests setup for the database java-unittest
+          urisReadyListenerWasRun.append(".");
+          String forestName = batch.getForest().getForestName();
+          if ( "java-unittest-1".equals(forestName) ) {
+            assertEquals("There should be one item in the batch",  1, batch.getItems().length);
+          } else if ( "java-unittest-2".equals(forestName) ) {
+            assertEquals("There should be two items in the batch", 2, batch.getItems().length);
+          } else if ( "java-unittest-3".equals(forestName) ) {
+            assertEquals("There should be one item in the batch",  1, batch.getItems().length);
+            databaseName.append(batch.getForest().getDatabaseName());
+          }
         }
       )
       .onQueryFailure(
@@ -107,9 +118,17 @@ System.out.println("DEBUG: [QueryHostBatcherTest] batch.getForest().getForestNam
         }
       );
     moveMgr.startJob(queryBatcher);
-    Thread.sleep(2000);
+    boolean finished = queryBatcher.awaitTermination(3, TimeUnit.MINUTES);
+    if ( finished == false ) {
+      throw new IllegalStateException("ERROR: Job did not finish within three minutes");
+    }
 
-    assertEquals("The listener should have run", "true", urisReadyListenerWasRun.toString());
+    if ( "java-unittest".equals(databaseName.toString()) ) {
+      assertEquals("The listener should have run three times", "...", urisReadyListenerWasRun.toString());
+    } else {
+      System.err.println("WARNING: skipping test which counts runs of onUrisReady since your db is \"" +
+        databaseName + "\" not \"java-unittest\" so I don't know how many forests you have");
+    }
     assertEquals("The listener should not have run", "", failListenerWasRun.toString());
   }
 }
