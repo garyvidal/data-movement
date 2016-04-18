@@ -18,4 +18,4 @@ uris.map(
 );
 
 // return only the uris not referenced by hold docs
-urisWithoutHolds.join(",");
+if ( urisWithoutHolds.length > 0 ) urisWithoutHolds.join(",");
