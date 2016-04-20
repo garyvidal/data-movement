@@ -124,6 +124,7 @@ public class LegalHoldsTest {
 
     // walk through all batches of docs matching our query
     DataMovementManager moveMgr = DataMovementManager.newInstance().setClient(Common.client);
+    StringBuffer anyFailure = new StringBuffer();
     QueryHostBatcher batcher = moveMgr.newQueryHostBatcher(query)
       .onUrisReady(
         (forestClient, batch) -> {
@@ -143,11 +144,19 @@ public class LegalHoldsTest {
           forestClient.newDocumentManager().delete(urisToDelete.split(","));
         }
       )
-      .onQueryFailure( (client, throwable) -> throwable.printStackTrace() );
+      .onQueryFailure( 
+        (client, throwable) -> {
+          anyFailure.append("error: " + throwable + "\n");
+          throwable.printStackTrace();
+      });
     moveMgr.startJob(batcher);
 
     // give this process up to 1 day to finish
     batcher.awaitTermination(1, TimeUnit.DAYS);
+
+    if ( anyFailure.length() > 0 ) {
+        fail(anyFailure.toString());
+    }
 
     JSONDocumentManager docMgr = Common.client.newJSONDocumentManager();
     // validate that we didn't delete the docs that didn't match
