@@ -45,7 +45,7 @@ public class ExportToWriterListenerTest {
     DatabaseClientFactory.newClient("localhost", 8012, "admin", "admin", Authentication.DIGEST);
   private static String collection = "ExportToWriterListenerTest";
   private static String docContents = "doc contents";
-  private static String outputFile = "target/ExportToWriterListenerTest.txt";
+  private static String outputFile = "target/ExportToWriterListenerTest.csv";
 
   @BeforeClass
   public static void beforeClass() {
