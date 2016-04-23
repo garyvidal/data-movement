@@ -32,6 +32,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
 import com.marklogic.client.DatabaseClientFactory.Authentication;
+import com.marklogic.client.admin.ExtensionMetadata;
+import com.marklogic.client.admin.TransformExtensionsManager;
+import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.BytesHandle;
 import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.DocumentMetadataHandle;
@@ -43,6 +46,7 @@ import com.marklogic.client.io.OutputStreamHandle;
 import com.marklogic.client.io.OutputStreamSender;
 import com.marklogic.client.io.ReaderHandle;
 import com.marklogic.client.io.StringHandle;
+import com.marklogic.client.io.marker.AbstractWriteHandle;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.WriteEvent;
 import com.marklogic.datamovement.WriteHostBatcher;
@@ -1036,7 +1040,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
     
     	
 		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
-		ihb2.withBatchSize(1);
+		ihb2.withBatchSize(25);
 		ihb2.onBatchSuccess(
 		        (client, batch) -> {
 		        	
@@ -1174,7 +1178,6 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		        )
 		        .onBatchFailure(
 		          (client, batch, throwable) -> {
-		        	  System.out.println("Host is "+client.getHost());
 		        	  failState.setTrue();
 		        	  failCount.add(batch.getItems().length);
 		          });
@@ -1215,6 +1218,139 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
     	boolean response = dbClient.newServerEval().xquery(query1).eval().next().getBoolean();
     	Assert.assertFalse(response);   
 	}
+	
+	@Test
+	public void testServerXQueryTransformSuccess() throws Exception
+    {      
+		   final String query1 = "fn:count(fn:doc())";             
+		   final MutableInt successCount = new MutableInt(0);
+	       	
+	       final MutableBoolean failState = new MutableBoolean(false);
+	       final MutableInt failCount = new MutableInt(0);
+           TransformExtensionsManager transMgr = 
+                        dbClient.newServerConfigManager().newTransformExtensionsManager();
+           ExtensionMetadata metadata = new ExtensionMetadata();
+           metadata.setTitle("Adding attribute xquery Transform");
+           metadata.setDescription("This plugin transforms an XML document by adding attribute to root node");
+           metadata.setProvider("MarkLogic");
+           metadata.setVersion("0.1");
+           // get the transform file from add-attr-xquery-transform.xqy
+           File transformFile = FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"add-attr-xquery-transform.xqy"));
+           FileHandle transformHandle = new FileHandle(transformFile);
+           transMgr.writeXQueryTransform("add-attr-xquery-transform", transformHandle, metadata);
+           
+           ServerTransform transform = new ServerTransform("add-attr-xquery-transform");
+           transform.put("name", "Lang");
+           transform.put("value", "English");
+           
+           String xmlStr1 = "<?xml  version=\"1.0\" encoding=\"UTF-8\"?><foo>This is so foo</foo>";
+           String xmlStr2 = "<?xml  version=\"1.0\" encoding=\"UTF-8\"?><foo>This is so bar</foo>";
+                  
+           //Use WriteHostbatcher to write the same files.                      
+           WriteHostBatcher ihb1 =  dmManager.newWriteHostBatcher();
+	   	   ihb1.withBatchSize(5);
+	   	   ihb1.withTransform(transform);
+	   	   ihb1.onBatchSuccess(
+	   			   (client, batch) -> {
+		        	
+	   				   successCount.add(batch.getItems().length);
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  failState.setTrue();
+		        	  failCount.add(batch.getItems().length);
+		          });
+	   	   dmManager.startJob(ihb1);
+           StringHandle handleFoo = new StringHandle();
+           handleFoo.set(xmlStr1);
+           
+           StringHandle handleBar = new StringHandle();
+           handleBar.set(xmlStr2);
+           
+           String uri1 = null;
+           String uri2 = null;
+         
+           for (int i = 0; i < 4; i++) {
+                  uri1 = "foo" + i + ".xml";
+                  uri2 = "bar" + i + ".xml";
+                  ihb1.add(uri1, handleFoo).add(uri2, handleBar);;
+           }
+           // Flush
+           ihb1.flush();
+           Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==8);
+   		   Assert.assertFalse(failState.booleanValue());
+   		   Assert.assertTrue(successCount.intValue()==8);
+    }
+	
+	@Test
+	public void testServerXQueryTransformFailure() throws Exception
+    {      
+		   final String query1 = "fn:count(fn:doc())";             
+		   final MutableInt successCount = new MutableInt(0);
+	       	
+	       final MutableBoolean failState = new MutableBoolean(false);
+	       final MutableInt failCount = new MutableInt(0);
+           TransformExtensionsManager transMgr = 
+                        dbClient.newServerConfigManager().newTransformExtensionsManager();
+           ExtensionMetadata metadata = new ExtensionMetadata();
+           metadata.setTitle("Adding attribute xquery Transform");
+           metadata.setDescription("This plugin transforms an XML document by adding attribute to root node");
+           metadata.setProvider("MarkLogic");
+           metadata.setVersion("0.1");
+           // get the transform file from add-attr-xquery-transform.xqy
+           File transformFile = FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"add-attr-xquery-transform.xqy"));
+           FileHandle transformHandle = new FileHandle(transformFile);
+           transMgr.writeXQueryTransform("add-attr-xquery-transform", transformHandle, metadata);
+           
+           ServerTransform transform = new ServerTransform("add-attr-xquery-transform");
+           transform.put("name", "Lang");
+           transform.put("value", "English");
+           
+           String xmlStr1 = "<?xml  version=\"1.0\" encoding=\"UTF-8\"?><foo>This is so foo</foo>";
+           String xmlStr2 = "<?xml  version=\"1.0\" encoding=\"UTF-8\"?><foo>This is so bar</foo";
+                  
+           //Use WriteHostbatcher to write the same files.                      
+           WriteHostBatcher ihb1 =  dmManager.newWriteHostBatcher();
+	   	   ihb1.withBatchSize(1);
+	   	   ihb1.withTransform(transform);
+	   	   ihb1.onBatchSuccess(
+	   			   (client, batch) -> {
+		        	
+	   				   successCount.add(batch.getItems().length);
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  failState.setTrue();
+		        	  failCount.add(batch.getItems().length);
+		          });
+	   	   dmManager.startJob(ihb1);
+           StringHandle handleFoo = new StringHandle();
+           handleFoo.set(xmlStr1);
+           
+           StringHandle handleBar = new StringHandle();
+           handleBar.set(xmlStr2);
+           
+           String uri1 = null;
+           String uri2 = null;
+           
+           for (int i = 0; i < 4; i++) {
+                  uri1 = "foo" + i + ".xml";
+                  uri2 = "bar" + i + ".xml";
+                  ihb1.add(uri1, handleFoo).add(uri2, handleBar);;
+           }
+           // Flush
+           ihb1.flush();
+           Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==4);
+   		   Assert.assertTrue(failState.booleanValue());
+   		   Assert.assertTrue(successCount.intValue()==4);
+   		   Assert.assertTrue(failCount.intValue()==4);
+    }
+
+
 	
 
 }
