@@ -44,11 +44,11 @@ public class BatchWriteSet {
     }
   }
 
-  public BatchWriteSet(int batchNumberInTransaction, DocumentManager<?,?> docMgr,
+  public BatchWriteSet(int batchNumberInTransaction, DocumentWriteSet writeSet,
     Transaction transaction, Forest forest)
   {
     this.batchNumberInTransaction = batchNumberInTransaction;
-    this.writeSet = docMgr.newWriteSet();
+    this.writeSet = writeSet;
     this.transaction = transaction;
     this.forest = forest;
   }

@@ -18,6 +18,7 @@ package com.marklogic.datamovement.impl;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicLong;
 
 import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.DatabaseClientFactory;
@@ -40,25 +41,48 @@ public class WriteHostBatcherImpl
   extends HostBatcherImpl<WriteHostBatcher>
   implements WriteHostBatcher
 {
-  private long autoFlushInterval;
   private int transactionSize;
   private String temporalCollection;
   private ServerTransform transform;
   private ForestConfiguration forestConfig;
-  private XMLDocumentManager docMgr;
-  private HashMap<Forest, BatchWriteSet> writeSets = new HashMap<>();
+  private BatchWriteSet writeSet;
   private ArrayList<BatchListener<WriteEvent>> successListeners = new ArrayList<>();
   private ArrayList<BatchFailureListener<WriteEvent>> failureListeners = new ArrayList<>();
+  private AtomicLong batchNumber = new AtomicLong(0);
+  private HashSet<String> hosts = new HashSet<>();
+  private DatabaseClient[] clients;
 
   public WriteHostBatcherImpl(ForestConfiguration forestConfig) {
     super();
     this.forestConfig = forestConfig;
+    for ( Forest forest : forestConfig.listForests()) {
+      hosts.add(forest.getHostName());
+    }
   }
 
   public synchronized void setClient(DatabaseClient client) {
     super.setClient(client);
-    // use XMLDocumentManager because it can use temporalCollection
-    this.docMgr = getClient().newXMLDocumentManager();
+    clients = new DatabaseClient[hosts.size()];
+    int i=0;
+    for ( String host : hosts ) {
+      if ( host.equals(client.getHost()) ) {
+        clients[i] = client;
+      } else {
+        clients[i] = DatabaseClientFactory.newClient(
+          host,
+          client.getPort(),
+          client.getDatabase(),
+          client.getUser(),
+          client.getPassword(),
+          client.getAuthentication(),
+          client.getForestName(),
+          client.getSSLContext(),
+          client.getSSLHostnameVerifier()
+        );
+      }
+      i++;
+    }
+
   }
 
   public WriteHostBatcher add(String uri, AbstractWriteHandle contentHandle) {
@@ -73,9 +97,8 @@ public class WriteHostBatcherImpl
   public WriteHostBatcher add(String uri, DocumentMetadataWriteHandle metadataHandle,
       AbstractWriteHandle contentHandle)
   {
-    Forest forest = assign(uri);
-    synchronized(writeSets) {
-      BatchWriteSet writeSet = getBatch(forest);
+    BatchWriteSet writeSet = getBatch();
+    synchronized(writeSet) {
       writeSet.getWriteSet().add(uri, metadataHandle, contentHandle);
       if ( writeSet.getWriteSet().size() >= getBatchSize() ) {
         // TODO: kick this off in another thread to reduce time spent in this synchronized block
@@ -100,10 +123,9 @@ public class WriteHostBatcherImpl
     return forestConfig.assign("default");
   }
 
-  private BatchWriteSet getBatch(Forest forest) {
-    BatchWriteSet writeSet = writeSets.get(forest);
+  private BatchWriteSet getBatch() {
     if ( writeSet == null ) {
-      writeSet = initBatch(forest);
+      writeSet = initTransaction();
     }
     return writeSet;
   }
@@ -117,75 +139,72 @@ public class WriteHostBatcherImpl
     return this;
   }
 
-  /* flush every <interval> milliseconds */
-  public WriteHostBatcher withAutoFlushInterval(long interval) {
-    // TODO: implement triggering flush() at the specified intervals
-    this.autoFlushInterval = interval;
-    return this;
-  }
-
-  public long getAutoFlushInterval() {
-    return autoFlushInterval;
-  }
-
   /* treat any remaining writeSets as if they're full and send them to
    * ImportHostBatchFullListener
    */
   public void flush() {
-    // create a new HashSet so we don't get ConcurrentModificationException
-    // since we'll delete these as we go
-    for ( Forest forest : new HashSet<Forest>(writeSets.keySet()) ) {
-      BatchWriteSet writeSet = writeSets.get(forest);
-      if ( writeSet != null ) {
-        flushBatch(writeSet);
-      }
+    if ( writeSet != null ) {
+      flushBatch(writeSet);
     }
   }
 
-  public void flushBatch(BatchWriteSet writeSet) {
+  public synchronized void flushBatch(BatchWriteSet writeSet) {
+    // TODO: optimize by making this method unsynchronized so we don't block while communicating with server
+    // if we're not initialized, return
+    if ( writeSet == null ) return;
+    // if there are no documents to write, return
+    if ( writeSet.getWriteSet() == null || writeSet.getWriteSet().size() == 0 ) return;
+    long batchNum = batchNumber.incrementAndGet();
+    // use mod operator to round-robin through hosts
+    int hostToUse = (int) (batchNum % clients.length);
+    DatabaseClient client = clients[hostToUse];
     Transaction transaction = writeSet.getTransaction();
-    Forest forest = writeSet.getForest();
+    Batch<WriteEvent> batch = writeSet.getBatchOfWriteEvents();
     try {
-      docMgr.write(writeSet.getWriteSet(), getTransform(), transaction, getTemporalCollection());
+      client.newXMLDocumentManager().write(writeSet.getWriteSet(), getTransform(), transaction, getTemporalCollection());
       int batchNumberInTransaction = writeSet.getBatchNumberInTransaction();
       if ( batchNumberInTransaction >= getTransactionSize() ) {
-        synchronized(writeSets) {
-          writeSets.remove(forest);
-        }
         if ( transaction != null ) transaction.commit();
         for ( BatchListener<WriteEvent> successListener : successListeners ) {
-          successListener.processEvent(getClient(), writeSet.getBatchOfWriteEvents());
+          successListener.processEvent(getClient(), batch);
         }
+        clearAndInitTransaction();
       } else {
-        synchronized(writeSets) {
-          writeSets.put(forest, new BatchWriteSet(batchNumberInTransaction++, docMgr, transaction, forest));
-        }
+        clearAndInitBatch(transaction);
       }
     } catch (Throwable t) {
       try { if ( transaction != null ) transaction.rollback(); } catch(Throwable t2) {}
-      synchronized(writeSets) {
-        writeSets.remove(forest);
-      }
-      Batch<WriteEvent> batch = writeSet.getBatchOfWriteEvents();
+      clearAndInitTransaction();
       for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
         failureListener.processEvent(getClient(), batch, t);
       }
     }
   }
 
-  public BatchWriteSet initBatch(Forest forest) {
+  public synchronized void clearAndInitTransaction() {
+    writeSet = null;
+    initTransaction();
+  }
+
+  public synchronized void clearAndInitBatch(Transaction transaction) {
+    writeSet = null;
+    initBatch(transaction);
+  }
+
+  public synchronized BatchWriteSet initTransaction() {
+    if ( writeSet != null ) return writeSet;
     Transaction transaction = null;
     if ( transactionSize > 1 ) {
        transaction = getClient().openTransaction();
     }
-    synchronized(writeSets) {
-      BatchWriteSet writeSet = writeSets.get(forest);
-      if ( writeSet == null ) {
-        writeSet = new BatchWriteSet(1, docMgr, transaction, forest);
-        writeSets.put(forest, writeSet);
-      }
-      return writeSet;
-    }
+    return initBatch(transaction);
+  }
+
+  public synchronized BatchWriteSet initBatch(Transaction transaction) {
+    if ( writeSet != null ) return writeSet;
+    writeSet = new BatchWriteSet(1, getClient().newXMLDocumentManager().newWriteSet(),
+      transaction, null);
+    return writeSet;
   }
 
   public void finalize() {
