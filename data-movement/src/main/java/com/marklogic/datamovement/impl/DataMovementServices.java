@@ -21,8 +21,10 @@ import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.marklogic.client.DatabaseClient;
+import com.marklogic.client.impl.DatabaseClientImpl;
 import com.marklogic.client.eval.EvalResult;
 import com.marklogic.client.eval.EvalResultIterator;
+import com.marklogic.client.io.JacksonHandle;
 import com.marklogic.contentpump.ContentPump;
 import com.marklogic.contentpump.utilities.OptionsFileUtil;
 import com.marklogic.datamovement.mlcp.CopyDefinition;
@@ -51,18 +53,10 @@ public class DataMovementServices {
   public ForestConfigurationImpl readForestConfig() {
     ArrayList<ForestImpl> forests = new ArrayList<>();
     // TODO: replace this eval with a more permanent solution that doesn't require the eval privileges
-    EvalResultIterator results = client.newServerEval()
-      .javascript(
-        "xdmp.arrayValues(xdmp.databaseForests(xdmp.database()).toArray()" +
-        "  .map(id => {return {" +
-        "    id:id," +
-        "    database: xdmp.database()," +
-        "    name: xdmp.forestName(id)," +
-        "    updatesAllowed: xdmp.forestUpdatesAllowed(id)," +
-        "    host: xdmp.hostName(xdmp.forestHost(id))}}))")
-      .eval();
-    for ( EvalResult result : results ) {
-      JsonNode forestNode = result.getAs(JsonNode.class);
+    JsonNode results = ((DatabaseClientImpl) client).getServices()
+      .getResource(null, "forestinfo", null, null, new JacksonHandle())
+      .get();
+    for ( JsonNode forestNode : results ) {
       String host = forestNode.get("host").asText();
       String database = forestNode.get("database").asText();
       String id = forestNode.get("id").asText();

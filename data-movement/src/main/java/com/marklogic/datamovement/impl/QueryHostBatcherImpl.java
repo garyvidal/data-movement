@@ -82,19 +82,12 @@ public class QueryHostBatcherImpl extends HostBatcherImpl<QueryHostBatcher> impl
 
   void start() {
     threadPool = new QueryThreadPoolExecutor(1, this);
-    HashMap<String,Forest> oneForestPerHost = new HashMap<>();
     Forest[] forests = forestConfig.listForests();
-    for ( Forest forest : forests ) {
-      oneForestPerHost.put(forest.getHostName(), forest);
-    }
-    // default threadCount to hostCount
-    int hostCount = oneForestPerHost.size();
     int threadCount = getThreadCount();
-    if ( threadCount <= 0 ) threadCount = hostCount;
+    if ( threadCount <= 0 ) threadCount = forests.length;
     threadPool.setCorePoolSize(threadCount);
     threadPool.setMaximumPoolSize(threadCount);
-    for ( String host : oneForestPerHost.keySet() ) {
-      final Forest forest = oneForestPerHost.get(host);
+    for ( final Forest forest : forests ) {
       final QueryDefinition finalQuery = query;
       final AtomicLong batchNumber = new AtomicLong();
       // right now this just launches one thread per host
