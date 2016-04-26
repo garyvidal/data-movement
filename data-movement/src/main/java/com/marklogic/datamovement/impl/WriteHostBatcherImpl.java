@@ -166,7 +166,7 @@ public class WriteHostBatcherImpl
       if ( batchNumberInTransaction >= getTransactionSize() ) {
         if ( transaction != null ) transaction.commit();
         for ( BatchListener<WriteEvent> successListener : successListeners ) {
-          successListener.processEvent(getClient(), batch);
+          successListener.processEvent(client, batch);
         }
         clearAndInitTransaction();
       } else {
@@ -176,7 +176,7 @@ public class WriteHostBatcherImpl
       try { if ( transaction != null ) transaction.rollback(); } catch(Throwable t2) {}
       clearAndInitTransaction();
       for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
-        failureListener.processEvent(getClient(), batch, t);
+        failureListener.processEvent(client, batch, t);
       }
     }
   }
