@@ -21,6 +21,12 @@ dependencies {
     compile group: 'com.marklogic', name: 'java-client-api', version:'4.0-SNAPSHOT'
     compile group: 'com.marklogic', name: 'mlcp', version:'8.0-4'
     compile group: 'com.sun.jersey', name: 'jersey-core', version:'1.17'
+    compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:'2.5.4'
     testCompile group: 'xmlunit', name: 'xmlunit', version:'1.6'
     testCompile ([fileTree(dir: "${System.properties['java.home']}/../lib", include: '*tools.jar'),fileTree(dir: "lib/test", include: '*.jar') ])
+}
+test {
+    testLogging {
+        exceptionFormat = 'full'
+    }
 }
