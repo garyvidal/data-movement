@@ -55,7 +55,11 @@ public class WriteHostBatcherImpl
   public WriteHostBatcherImpl(ForestConfiguration forestConfig) {
     super();
     this.forestConfig = forestConfig;
-    for ( Forest forest : forestConfig.listForests()) {
+    Forest[] forests = forestConfig.listForests();
+    if ( forests.length == 0 ) {
+      throw new IllegalStateException("WriteHostBatcher requires at least one writeable forest");
+    }
+    for ( Forest forest : forests ) {
       hosts.add(forest.getHostName());
     }
   }
