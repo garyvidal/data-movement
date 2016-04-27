@@ -1,5 +1,6 @@
 apply plugin: 'java'
 apply plugin: 'maven'
+apply plugin: 'maven-publish'
 
 group = 'com.marklogic'
 version = '1.0-SNAPSHOT'
@@ -30,8 +31,83 @@ test {
         exceptionFormat = 'full'
     }
 }
-task javadocs(type: Javadoc) {
-    source = sourceSets.main.allJava
-    classpath = configurations.compile
-    destinationDir = file("./doc/")
+
+task javadocJar(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc.destinationDir
+}
+
+task sourcesJar(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+Node pomCustomizations = new NodeBuilder(). project {
+        name 'data-movement'
+        packaging 'jar'
+        textdescription 'The MarkLogic Data Movement API'
+        url 'https://github.com/marklogic/data-movement.git'
+
+        scm {
+            url 'git@github.com:marklogic/data-movement.git'
+                connection 'scm:git@github.com:marklogic/data-movement.git'
+                developerConnection 'scm:git@github.com:marklogic/data-movement.git'
+        }
+
+        licenses {
+            license {
+                name 'The Apache Software License, Version 2.0'
+                    url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+        }
+
+        developers {
+            developer {
+                name 'MarkLogic'
+                    email 'java-sig@marklogic.com'
+                    organization 'MarkLogic'
+                    organizationUrl 'https://www.marklogic.com'
+            }
+            developer {
+                name 'MarkLogic Github Contributors'
+                    email 'general@developer.marklogic.com'
+                    organization 'Github Contributors'
+                    organizationUrl 'https://github.com/marklogic/data-movement/graphs/contributors'
+            }
+        }
+}
+
+
+publishing {
+  publications {
+    mainJava(MavenPublication) {
+      from components.java
+
+      pom.withXml {
+        asNode().append(pomCustomizations.developers)
+        asNode().append(pomCustomizations.name)
+        asNode().append(pomCustomizations.packaging)
+        asNode().append(pomCustomizations.url)
+        asNode().append(pomCustomizations.scm)
+        asNode().append(pomCustomizations.licenses)
+        asNode().appendNode("description", pomCustomizations.textdescription.text())
+      }
+
+      artifact sourcesJar
+
+      artifact javadocJar
+
+    }
   }
+repositories {
+    maven {
+      url publishUrl
+    }
+  }
+
+}
+
+
+
+
+
