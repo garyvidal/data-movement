@@ -30,3 +30,8 @@ test {
         exceptionFormat = 'full'
     }
 }
+task javadocs(type: Javadoc) {
+    source = sourceSets.main.allJava
+    classpath = configurations.compile
+    destinationDir = file("./doc/")
+  }
