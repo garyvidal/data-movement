@@ -24,6 +24,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.w3c.dom.Document;
 
@@ -35,6 +36,7 @@ import com.marklogic.client.DatabaseClientFactory.Authentication;
 import com.marklogic.client.admin.ExtensionMetadata;
 import com.marklogic.client.admin.TransformExtensionsManager;
 import com.marklogic.client.document.ServerTransform;
+import com.marklogic.client.impl.DatabaseClientImpl;
 import com.marklogic.client.io.BytesHandle;
 import com.marklogic.client.io.DOMHandle;
 import com.marklogic.client.io.DocumentMetadataHandle;
@@ -46,7 +48,6 @@ import com.marklogic.client.io.OutputStreamHandle;
 import com.marklogic.client.io.OutputStreamSender;
 import com.marklogic.client.io.ReaderHandle;
 import com.marklogic.client.io.StringHandle;
-import com.marklogic.client.io.marker.AbstractWriteHandle;
 import com.marklogic.datamovement.DataMovementManager;
 import com.marklogic.datamovement.WriteEvent;
 import com.marklogic.datamovement.WriteHostBatcher;
@@ -57,14 +58,13 @@ import com.marklogic.datamovement.functionaltests.util.BasicJavaClientREST;
 public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	
 	private static String dbName = "WriteHostBatcher";
-	private static String [] fNames = {"WriteHostBatcher-1","WriteHostBatcher-2","WriteHostBatcher-3"};
 	private static DataMovementManager dmManager = DataMovementManager.newInstance();
 	private static final String TEST_DIR_PREFIX = "/WriteHostBatcher-testdata/";
 	
 	private static DatabaseClient dbClient;
 	private static String host = "localhost";
 	private static String user = "admin";
-	private static int port = 8000;
+	private static int port = 9876;
 	private static String password = "admin";
 	
 	private static JacksonHandle jacksonHandle;
@@ -79,22 +79,29 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	private static DocumentMetadataHandle docMeta2;
 	private static ReaderHandle readerHandle1;
 	private static OutputStreamHandle osHandle1;
+	private static WriteHostBatcher ihbMT;
+	private static JsonNode clusterInfo;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-
-		createDB(dbName);
+			    
+	    createDB(dbName);
 		Thread.currentThread().sleep(1000L);
-		for (int i=0;i < fNames.length; i++){
-			createForest(fNames[i],dbName);
+		int count = 1;
+		for ( String forestHost : getHosts() ) {
+			createForestonHost(dbName+"-"+count,dbName,forestHost);
+		    count ++;
 			Thread.currentThread().sleep(1000L);
 		}
-		
-		associateRESTServerWithDB("App-Services",dbName );
+			
+		assocRESTServer(dbName+"-Server",dbName,port);
 		
 		dbClient = DatabaseClientFactory.newClient(host, port, user, password, Authentication.DIGEST);
 		dmManager.setClient(dbClient);
 		
+		clusterInfo = ((DatabaseClientImpl) dbClient).getServices()
+			      .getResource(null, "forestinfo", null, null, new JacksonHandle())
+			      .get();
 		
 		//JacksonHandle
 		JsonNode actualObj = new ObjectMapper().readTree("{\"k1\":\"v1\"}");
@@ -156,8 +163,34 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		docMeta2 = new DocumentMetadataHandle()
 		 .withCollections("Sample Collection 2").withProperty("docMeta-2", "true").withQuality(0);
 		docMeta1.setFormat(Format.XML);
+		
+		
 	}
 	
+	
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		associateRESTServerWithDB(dbName+"-Server","Documents" );
+		for (int i =0 ; i < clusterInfo.size(); i++){
+			System.out.println(dbName+"-"+(i+1));
+			detachForest(dbName, dbName+"-"+(i+1));
+			deleteForest(dbName+"-"+(i+1));
+		}
+		
+		deleteDB(dbName);
+	}
+
+	@Before
+	public void setUp() throws Exception {
+	}
+
+	@After
+	public void tearDown() throws Exception {
+		dmManager.stopJob(null);
+		clearDB(port);
+	}
+	
+
 	private void replenishStream() throws Exception{
 		
 		// InputStreamHandle
@@ -179,6 +212,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
         		while ((byteCount=docStream.read(buf)) != -1) {
         			out.write(buf, 0, byteCount);
         		}
+        		
             }
         };
         
@@ -205,23 +239,6 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
         osHandle1 = new OutputStreamHandle(sender1);
 	    osHandle1.withFormat(Format.JSON);
 		
-	}
-	
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		associateRESTServerWithDB("App-Services","Documents" );
-		deleteForest(fNames[0]);
-		deleteDB(dbName);
-	}
-
-	@Before
-	public void setUp() throws Exception {
-	}
-
-	@After
-	public void tearDown() throws Exception {
-		dmManager.stopJob(null);
-		clearDB(port);
 	}
 	
 	// ISSUE 45
@@ -364,6 +381,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
     	clearDB(port);
     	
 		// Test 4 All failures in 2 batches
+    	Thread.currentThread().sleep(1500L);
     	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==0);
     	replenishStream();
 		WriteHostBatcher ihb4 =  dmManager.newWriteHostBatcher();
@@ -767,7 +785,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	
 	//Immutability of WriteHostBatcher- ISSUE # 26
 	@Test
-	public void testHostBatcher1() throws Exception{
+	public void testHostBatcherImmutability() throws Exception{
 		
 		WriteHostBatcher ihb = dmManager.newWriteHostBatcher();
 		ihb.withJobName(null);
@@ -782,36 +800,6 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		
 	}
 	
-	//Duplicate job names
-	@Test
-	public void testHostBatcher2() throws Exception{
-		
-		WriteHostBatcher ihb1 = dmManager.newWriteHostBatcher();
-		WriteHostBatcher ihb2 = dmManager.newWriteHostBatcher();
-		
-		ihb1.withJobName("Job1");
-		ihb2.withJobName("Job1");
-		
-		ihb1.withBatchSize(1);
-		ihb2.withBatchSize(1);
-		
-		dmManager.startJob(ihb1);
-		dmManager.startJob(ihb2);
-		
-
-		ihb1.add("/local/json", jacksonHandle);
-		
-		
-	
-		ihb2.add("/local/filejsonjson", stringHandle);
-		
-		ihb1.flush();
-		ihb2.flush();
-		System.out.println("abc");
-		
-	}
-	
-
 	//ISSUE # 38
 	@Test
 	public void testNumberofBatches() throws Exception{
@@ -898,14 +886,16 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		ihb1.flush();
 
 		
-		Assert.assertFalse(successForest.toString().contains("null"));
+		Assert.assertTrue(successForest.toString().contains("null"));
+		System.out.println(successUser.toString());
+		System.out.println(count(successUser.toString(),user));
 		Assert.assertTrue(count(successUser.toString(),user)==10);
 		Assert.assertTrue(count(successPassword.toString(),password)==10);
 		Assert.assertTrue(count(successPort.toString(),String.valueOf(port))==10);
 		Assert.assertTrue(count(successHost.toString(),String.valueOf(host))!=10);
 				
 
-		Assert.assertFalse(failureForest.toString().contains("null"));
+		Assert.assertTrue(failureForest.toString().contains("null"));
 		Assert.assertTrue(count(failureUser.toString(),user)==5);
 		Assert.assertTrue(count(failurePassword.toString(),password)==5);
 		Assert.assertTrue(count(failurePort.toString(),String.valueOf(port))==5);
@@ -914,7 +904,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	
 	
 	
-	@Test
+	@Ignore
 	public void testBatchObject() throws Exception{
 	   
 	  
@@ -985,8 +975,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	
 	private int count(String s, String in){
 		int i = 0;
-		Pattern p = Pattern.compile(s);
-		Matcher m = p.matcher( in );
+		Pattern p = Pattern.compile(in);
+		Matcher m = p.matcher( s );
 		while (m.find()) {
 		    i++;
 		}
@@ -1033,10 +1023,11 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
        	
        	final MutableBoolean failState = new MutableBoolean(false);
        	final MutableInt failCount = new MutableInt(0);
-
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[0]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[1]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[2]+"/properties");
+       	
+		for (int i =0 ; i < clusterInfo.size(); i++)
+		 	changeProperty(properties,"/manage/v2/forests/"+dbName+"-"+(i+1)+"/properties");
+				
+		     	
     
     	
 		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
@@ -1062,10 +1053,9 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		ihb2.flush();
 		
 		properties.put("updates-allowed", "all");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[0]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[1]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[2]+"/properties");
-
+		for (int i =0 ; i < clusterInfo.size(); i++)
+		 	changeProperty(properties,"/manage/v2/forests/"+dbName+"-"+(i+1)+"/properties");
+      
     	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==0);
 		
 		Assert.assertTrue(failState.booleanValue());
@@ -1103,8 +1093,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	 	Number response = dbClient.newServerEval().xquery(query1).eval().next().getNumber();
     	Assert.assertTrue(response.intValue()==20);
     	
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[0]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[1]+"/properties");
+		for (int i =0 ; i < clusterInfo.size() -1; i++)
+		 	changeProperty(properties,"/manage/v2/forests/"+dbName+"-"+(i+1)+"/properties");
        	
 
     	
@@ -1133,9 +1123,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		ihb2.flush();
 		
 		properties.put("updates-allowed", "all");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[0]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[1]+"/properties");
-       	changeProperty(properties,"/manage/v2/forests/"+fNames[2]+"/properties");
+		for (int i =0 ; i < clusterInfo.size(); i++)
+		 	changeProperty(properties,"/manage/v2/forests/"+dbName+"-"+(i+1)+"/properties");
     	
     	System.out.println("Success count: "+successCount);
       	System.out.println("Failure count: "+failureCount);
@@ -1349,8 +1338,128 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
    		   Assert.assertTrue(successCount.intValue()==4);
    		   Assert.assertTrue(failCount.intValue()==4);
     }
-
-
 	
+	@Test
+	public void testAddMultiThreadedSuccess() throws Exception{
+		
+		final String query1 = "fn:count(fn:doc())";
+		ihbMT =  dmManager.newWriteHostBatcher();
+       	ihbMT.withBatchSize(100);
+       	ihbMT.onBatchSuccess(
+		        (client, batch) -> {
+		        	System.out.println("Batch size "+batch.getItems().length);
+		        	for(WriteEvent w:batch.getItems()){
+		        		System.out.println("Success "+w.getTargetUri());
+		        	}
+		        		
+		        	
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  throwable.printStackTrace();
+		        		for(WriteEvent w:batch.getItems()){
+		        			System.out.println("Failure "+w.getTargetUri());
+		        		}
+			        		
+		       
+		});
+		dmManager.startJob(ihbMT);
 
+       	class MyRunnable implements Runnable {
+       	  
+       	  @Override
+       	  public void run() {
+         		System.out.println("Now executing thread "+Thread.currentThread().getId());
+           		for (int j =0 ;j < 100; j++){
+    				String uri ="/local/json-"+ j+"-"+Thread.currentThread().getId();
+    				System.out.println("URI is "+uri);
+    				ihbMT.add(uri, fileHandle);
+    				
+    				
+    			}
+           		ihbMT.flush();
+       	  }  
+           		
+       	} 
+       	Thread t1,t2,t3;
+       	t1 = new Thread(new MyRunnable());
+       	t2 = new Thread(new MyRunnable());
+       	t3 = new Thread(new MyRunnable());
+       	t1.start();
+       	t2.start();
+       	t3.start();
+       	
+       	t1.join();
+       	t2.join();
+       	t3.join();
+
+       	
+       	System.out.println("Count is "+dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+		Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==300);
+	}
+	
+	@Test
+	public void testAddMultiThreadedFailure() throws Exception{
+		
+		final String query1 = "fn:count(fn:doc())";
+		ihbMT =  dmManager.newWriteHostBatcher();
+       	ihbMT.withBatchSize(120);
+       	ihbMT.onBatchSuccess(
+		        (client, batch) -> {
+		        	System.out.println("Success Batch size "+batch.getItems().length);
+		        	for(WriteEvent w:batch.getItems()){
+		        		System.out.println("Success "+w.getTargetUri());
+		        	}
+		        		
+		        	
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  throwable.printStackTrace();
+		        		System.out.println("Failure Batch size "+batch.getItems().length);
+		        		for(WriteEvent w:batch.getItems()){
+		        			System.out.println("Failure "+w.getTargetUri());
+		        		}
+			        		
+		       
+		});
+		dmManager.startJob(ihbMT);
+
+       	class MyRunnable implements Runnable {
+       	  
+       	  @Override
+       	  public void run() {
+         		
+           		for (int j =0 ;j < 100; j++){
+    				String uri ="/local/json-"+ j;
+    				System.out.println("URI: "+ uri+ "Thread "+Thread.currentThread().getId());
+    				ihbMT.add(uri, fileHandle);
+    			}
+           		ihbMT.flush();
+       	  }  
+           		
+       	} 
+       	Thread t1,t2,t3;
+       	t1 = new Thread(new MyRunnable());
+       	t2 = new Thread(new MyRunnable());
+       	t3 = new Thread(new MyRunnable());
+       	t1.start();
+      
+       	t2.start();
+   
+       	t3.start();
+       	
+       	t1.join();
+       	t2.join();
+       	t3.join();
+
+       	
+       	System.out.println("Count is "+dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+		Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==100);
+	}
+	
 }

@@ -17,10 +17,7 @@
 package com.marklogic.datamovement.functionaltests.util;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.nio.Buffer;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
@@ -29,23 +26,20 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpMessage;
 import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpDelete;
-import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
-import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.AbstractHttpMessage;
-import org.apache.http.message.BasicHttpRequest;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.slf4j.Logger;
@@ -59,7 +53,6 @@ import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.admin.ServerConfigurationManager;
 import com.marklogic.client.io.DocumentMetadataHandle;
 import com.marklogic.client.io.DocumentMetadataHandle.Capability;
-import com.marklogic.datamovement.mlcp.ImportDefinition;
 
 
 /**
@@ -224,6 +217,33 @@ public abstract class ConnectedRESTQA {
 		}
 	}
 	
+	public static String[] getHosts()	{
+		try{
+			DefaultHttpClient client = new DefaultHttpClient();
+			client.getCredentialsProvider().setCredentials(
+					new AuthScope(host, 8002),
+					new UsernamePasswordCredentials("admin", "admin"));
+			HttpGet get = new HttpGet("http://"+host+":8002"+ "/manage/v2/hosts?format=json");
+			
+
+			HttpResponse response = client.execute(get);
+			ResponseHandler<String> handler = new BasicResponseHandler();
+			String body = handler.handleResponse(response);
+			JsonNode  actualObj = new ObjectMapper().readTree(body);
+			JsonNode nameNode = actualObj.path("host-default-list").path("list-items");
+					//.path("meta").path("list-items").path("list-item");
+			List<String> hosts = nameNode.findValuesAsText("nameref");
+			String[] s = new String[hosts.size()];
+			hosts.toArray(s);
+			return s;
+			
+			
+		}catch (Exception e) {
+			// writing error to Log
+			e.printStackTrace();
+		}
+		return null;
+	}
 	
 	/*
 	 * creating forests on different hosts
