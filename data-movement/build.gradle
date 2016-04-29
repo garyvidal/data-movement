@@ -1,6 +1,8 @@
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
+import javax.tools.ToolProvider
+
 
 group = 'com.marklogic'
 version = '1.0-SNAPSHOT'
@@ -25,6 +27,9 @@ dependencies {
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:'2.5.4'
     testCompile group: 'xmlunit', name: 'xmlunit', version:'1.6'
     testCompile ([fileTree(dir: "${System.properties['java.home']}/../lib", include: '*tools.jar'),fileTree(dir: "lib/test", include: '*.jar') ])
+    compile (
+      files(((URLClassLoader) ToolProvider.getSystemToolClassLoader()).getURLs())
+    )
 }
 test {
     testLogging {
