@@ -245,6 +245,47 @@ public abstract class ConnectedRESTQA {
 		return null;
 	}
 	
+	public static JsonNode getState(Map<String, String> properties, String endpoint)	{
+		try{
+			
+			DefaultHttpClient client = new DefaultHttpClient();
+			client.getCredentialsProvider().setCredentials(
+					new AuthScope(host, 8002),
+					new UsernamePasswordCredentials("admin", "admin"));
+
+			
+			StringBuffer xmlBuff = new StringBuffer(); 	
+			//xmlBuff.append("<forest-properties xmlns=\"http://marklogic.com/manage\">"); 
+			
+			 Iterator it = properties.entrySet().iterator();
+			 int size = properties.size();
+			 int j = 0;
+			 while (it.hasNext()) {
+		         Map.Entry pair = (Map.Entry)it.next();
+		         xmlBuff.append(pair.getKey());
+		         if (j == (size -1))
+		        	 xmlBuff.append("="+pair.getValue());
+		         else
+		        	 xmlBuff.append("="+pair.getValue()).append("&");
+		        	 
+		         j++;
+		      
+			}
+			HttpGet get = new HttpGet("http://"+host+":8002"+ endpoint+"?format=json&"+xmlBuff.toString()); 
+			HttpResponse response = client.execute(get);
+			ResponseHandler<String> handler = new BasicResponseHandler();
+			String body = handler.handleResponse(response);
+			JsonNode  actualObj = new ObjectMapper().readTree(body);
+			return actualObj;
+	
+		}catch (Exception e) {
+			// writing error to Log
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	
 	/*
 	 * creating forests on different hosts
 	 */
