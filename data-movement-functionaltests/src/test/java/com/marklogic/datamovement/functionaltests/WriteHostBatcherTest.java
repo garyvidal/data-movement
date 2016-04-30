@@ -81,14 +81,27 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	private static OutputStreamHandle osHandle1;
 	private static WriteHostBatcher ihbMT;
 	private static JsonNode clusterInfo;
+	private static String[] hostNames ;
+	
+	private static String stringTriple;
+	private static File fileJson;
+	private static Document docContent;
+
+	private static FileInputStream inputStream;
+	private static OutputStreamSender sender;
+	private static OutputStreamSender sender1;
+    private static BufferedReader docStream;
+    private static BufferedReader docStream1;
+    private static byte[] bytesJson;
+	private static JsonNode jsonNode;
 	
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
-			    
-	    createDB(dbName);
+		hostNames = getHosts();	    
+	  createDB(dbName);
 		Thread.currentThread().sleep(1000L);
 		int count = 1;
-		for ( String forestHost : getHosts() ) {
+		for ( String forestHost : hostNames ) {
 			createForestonHost(dbName+"-"+count,dbName,forestHost);
 		    count ++;
 			Thread.currentThread().sleep(1000L);
@@ -104,57 +117,34 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 			      .get();
 		
 		//JacksonHandle
-		JsonNode actualObj = new ObjectMapper().readTree("{\"k1\":\"v1\"}");
+		jsonNode = new ObjectMapper().readTree("{\"k1\":\"v1\"}");
 		jacksonHandle = new JacksonHandle();
-		jacksonHandle.set(actualObj);
+		jacksonHandle.set(jsonNode);
 		
 		//StringHandle
-		String ntriple5 = "<http://example.org/s5> <http://example.com/p2> <http://example.org/o2> .";
-		stringHandle = new StringHandle(ntriple5).withMimetype("application/n-triples");
+		stringTriple = "<abc>xml</abc>";
+		stringHandle = new StringHandle(stringTriple);
 		
 		
 		// FileHandle
-		fileHandle = new FileHandle(FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"dir.json")));
+		fileJson = FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"dir.json"));
+		fileHandle = new FileHandle(fileJson);
 		fileHandle.setFormat(Format.JSON);
 		
-		//BytesHandle
-		File file = FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"dir.json"));		 
-	    FileInputStream fis = new FileInputStream(file);
-	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-	    byte[] buf = new byte[1024];
-	    for (int readNum; (readNum = fis.read(buf)) != -1;) 
-	    {
-	        bos.write(buf, 0, readNum);
-	    }
-	    
-	    byte[] bytes = bos.toByteArray();
-	    
-	    fis.close();
-	    bos.close();
-	    	    
-	    bytesHandle = new BytesHandle();
-	    bytesHandle.setFormat(Format.JSON);
-	    bytesHandle.set(bytes);
+
 	    
 	    //DomHandle
 		DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
 		DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-		Document content = docBuilder.parse(FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"xml-original-test.xml")));			 
+		docContent = docBuilder.parse(FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"xml-original-test.xml")));			 
 	   
 	  	domHandle = new DOMHandle();
-		domHandle.set(content);
+		domHandle.set(docContent);
 
 
-		// ReaderHandle
-		BufferedReader docStream = new BufferedReader(new FileReader(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX + "WrongFormat.xml").getPath()));
-	    readerHandle = new ReaderHandle();
-	    readerHandle.withFormat(Format.XML);
-	    readerHandle.set(docStream);
+
 	    
-	    BufferedReader docStream1 = new BufferedReader(new FileReader(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX + "employee.xml").getPath()));
-	    readerHandle1 = new ReaderHandle();
-	    readerHandle1.withFormat(Format.XML);
-	    readerHandle1.set(docStream1);
+	
 	    
 	    docMeta1= new DocumentMetadataHandle()
 		 .withCollections("Sample Collection 1").withProperty("docMeta-1", "true").withQuality(1);
@@ -180,14 +170,33 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		deleteDB(dbName);
 	}
 
+	
+
 	@Before
 	public void setUp() throws Exception {
+
 	}
 
 	@After
 	public void tearDown() throws Exception {
 		dmManager.stopJob(null);
+		Map<String, String> props = new HashMap<String, String>();
+ 		props.put("group-id","Default");
+ 		props.put("view","status");
+		
+ 		JsonNode output = getState(props, "/manage/v2/servers/"+dbName+"-Server").path("server-status").path("status-properties");
+ 		props.clear();
+ 		String s = output.findValue("enabled").get("value").asText();
+ 		System.out.println("S is "+s);
+		if(s.trim().equals("false")){
+			props.put("server-name",dbName+"-Server");
+			props.put("group-name", "Default");
+			props.put("enabled", "true");
+   			changeProperty(props,"/manage/v2/servers/"+dbName+"-Server/properties");
+		}
+			
 		clearDB(port);
+
 	}
 	
 
@@ -195,12 +204,12 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		
 		// InputStreamHandle
 		isHandle = new InputStreamHandle();
-		InputStream inputStream = new FileInputStream(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"myJSONFile.json").getPath());
+		inputStream = new FileInputStream(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"myJSONFile.json").getPath());
 		isHandle.withFormat(Format.JSON);
 		isHandle.set(inputStream);
 		
 		// OutputStreamHandle
-		OutputStreamSender sender = new OutputStreamSender() {
+		sender = new OutputStreamSender() {
             // the callback receives the output stream
 			public void write(OutputStream out) throws IOException {
         		// acquire the content
@@ -220,7 +229,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
         osHandle = new OutputStreamHandle(sender);
 	    osHandle.withFormat(Format.JSON);
 	
-		OutputStreamSender sender1 = new OutputStreamSender() {
+		sender1 = new OutputStreamSender() {
             // the callback receives the output stream
 			public void write(OutputStream out) throws IOException {
         		// acquire the content
@@ -238,7 +247,39 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
         // create the handle
         osHandle1 = new OutputStreamHandle(sender1);
 	    osHandle1.withFormat(Format.JSON);
+	    
+
+	    
+		// ReaderHandle
+		docStream = new BufferedReader(new FileReader(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX + "WrongFormat.xml").getPath()));
+	    readerHandle = new ReaderHandle();
+	    readerHandle.withFormat(Format.XML);
+	    readerHandle.set(docStream);
 		
+	    
+	    docStream1 = new BufferedReader(new FileReader(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX + "employee.xml").getPath()));
+	    readerHandle1 = new ReaderHandle();
+	    readerHandle1.withFormat(Format.XML);
+	    readerHandle1.set(docStream1);
+	    
+		//BytesHandle
+		File file = FileUtils.toFile(WriteHostBatcherTest.class.getResource(TEST_DIR_PREFIX+"dir.json"));		 
+	    FileInputStream fis = new FileInputStream(file);
+	    ByteArrayOutputStream bos = new ByteArrayOutputStream();
+	    byte[] buf = new byte[1024];
+	    for (int readNum; (readNum = fis.read(buf)) != -1;) 
+	    {
+	        bos.write(buf, 0, readNum);
+	    }
+	    
+	    bytesJson = bos.toByteArray();
+	    
+	    fis.close();
+	    bos.close();
+	    	    
+	    bytesHandle = new BytesHandle();
+	    bytesHandle.setFormat(Format.JSON);
+	    bytesHandle.set(bytesJson);
 	}
 	
 	// ISSUE 45
@@ -435,6 +476,7 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		ihb1.onBatchSuccess(
 		        (client, batch) -> {
 		        	for(WriteEvent w: batch.getItems()){
+		        		System.out.println("Success:"+ w.getTargetUri()+":");
 		        		successBatch.append(w.getTargetUri()+":");
 		        	}
 		         	
@@ -442,15 +484,19 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		        )
 		        .onBatchFailure(
 		          (client, batch, throwable) -> {
+		        	  throwable.printStackTrace();
 		        	  for(WriteEvent w: batch.getItems()){
+		        		  System.out.println("Failure:"+ w.getTargetUri()+":");
 		        		  failureBatch.append(w.getTargetUri()+":");
 			        	}
 
 		           
 		          });
 		dmManager.startJob(ihb1);
-		ihb1.addAs("/doc/jackson", jacksonHandle).addAs("/doc/reader_wrongxml", readerHandle).addAs("/doc/string", docMeta1, stringHandle).addAs("/doc/file", docMeta2, fileHandle).addAs("/doc/is", isHandle)
-		.addAs("/doc/os_wrongjson", docMeta2, osHandle).addAs("/doc/bytes", docMeta1, bytesHandle).addAs("/doc/dom", domHandle);
+		// Issue with adding json using File Object
+		//ihb1.addAs("/doc/string", docMeta1, fileJson);
+		ihb1.addAs("/doc/jackson", jsonNode).addAs("/doc/reader_wrongxml", docStream).addAs("/doc/string", docMeta1, stringTriple).addAs("/doc/file", docMeta2, fileJson)
+		.addAs("/doc/is", inputStream).addAs("/doc/bytes", docMeta1, bytesJson).addAs("/doc/dom", docContent);
 		
 		
 		ihb1.flush();
@@ -497,8 +543,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		           
 		          });
 		dmManager.startJob(ihb2);
-		ihb2.addAs("/doc/jackson", jacksonHandle).addAs("/doc/reader_wrongxml", readerHandle).addAs("/doc/string", docMeta1, stringHandle).addAs("/doc/file", docMeta2, fileHandle).addAs("/doc/is", isHandle)
-		.addAs("/doc/os_wrongjson", docMeta2, osHandle).addAs("/doc/bytes", docMeta1, bytesHandle).addAs("/doc/dom", domHandle);
+		ihb2.addAs("/doc/jackson", jsonNode).addAs("/doc/reader_wrongxml", docStream).addAs("/doc/string", docMeta1, stringTriple).addAs("/doc/file", docMeta2, fileJson).addAs("/doc/is", inputStream)
+		.addAs("/doc/bytes", docMeta1, bytesJson).addAs("/doc/dom", docContent);
 		
 		
 		ihb2.flush();
@@ -534,13 +580,13 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		          });
 		dmManager.startJob(ihb3);
 		
-		ihb3.addAs("/doc/jackson", docMeta2, jacksonHandle).addAs("/doc/reader_xml",docMeta1, readerHandle1).addAs("/doc/string", stringHandle).addAs("/doc/file",  fileHandle).addAs("/doc/is", docMeta2,isHandle)
-		.addAs("/doc/os_json",  osHandle1).addAs("/doc/bytes",  bytesHandle).addAs("/doc/dom", docMeta1, domHandle);
+		ihb3.addAs("/doc/jackson", docMeta2, jsonNode).addAs("/doc/reader_xml",docMeta1, docStream1).addAs("/doc/string", stringTriple).addAs("/doc/file",  fileJson).addAs("/doc/is", docMeta2,inputStream)
+		.addAs("/doc/bytes",  bytesJson).addAs("/doc/dom", docMeta1, docContent);
 		
 		
 		ihb3.flush();
 		System.out.println("Size is "+dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
-    	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==8);
+    	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==7);
     	
     	DocumentMetadataHandle  mHandle2 = readMetadataFromDocument(dbClient, "/doc/reader_xml", "XML");
     	Assert.assertEquals(1,mHandle2.getQuality());
@@ -584,10 +630,10 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		          });
 		dmManager.startJob(ihb4);
 		
-		ihb4.addAs("/doc/jackson", docMeta2, jacksonHandle).addAs("/doc/reader_wrongxml",docMeta1, readerHandle).addAs("/doc/string", stringHandle).addAs("/doc/file",  fileHandle);
+		ihb4.addAs("/doc/jackson", docMeta2, jsonNode).addAs("/doc/reader_wrongxml",docMeta1, docStream).addAs("/doc/string",stringTriple).addAs("/doc/file",  fileJson);
 		ihb4.flush();
-		
-		ihb4.addAs("/doc/is", docMeta2,isHandle).addAs("/doc/os_wrongjson",  osHandle).addAs("/doc/bytes",  bytesHandle).addAs("/doc/dom", docMeta1, domHandle);
+		replenishStream();
+		ihb4.addAs("/doc/is", docMeta2,inputStream).addAs("/doc/reader_wrongxml",docMeta1, docStream).addAs("/doc/bytes",  bytesJson).addAs("/doc/dom", docMeta1, docContent);
 		ihb4.flush();
 		
 		
@@ -783,8 +829,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	}
 	
 	
-	//Immutability of WriteHostBatcher- ISSUE # 26
-	@Test
+	//Immutability of WriteHostBatcher- ISSUE # 26 ea 3
+	@Ignore
 	public void testHostBatcherImmutability() throws Exception{
 		
 		WriteHostBatcher ihb = dmManager.newWriteHostBatcher();
@@ -1016,7 +1062,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 	public void testInsertoReadOnlyForest() throws Exception{
 		Map <String, String> properties = new HashMap();
 		properties.put("updates-allowed", "read-only");
-		
+		for (int i =0 ; i < clusterInfo.size(); i++)
+		 	changeProperty(properties,"/manage/v2/forests/"+dbName+"-"+(i+1)+"/properties");
 		final String query1 = "fn:count(fn:doc())";
 	 	
        	final MutableInt successCount = new MutableInt(0);
@@ -1189,24 +1236,6 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
 		
 	}
 	
-	//ISSUE # 42
-	@Test
-	public void testInsertWithoutStart() throws Exception{
-	   
-    	WriteHostBatcher ihb1 =  dmManager.newWriteHostBatcher();
-		ihb1.withBatchSize(5);
-		
-		for (int i =0 ;i < 20; i++){
-			String uri ="/local/json-"+ i;
-			ihb1.add(uri, stringHandle);
-		}
-	
-		ihb1.flush();
-		 
-    	String query1 = "fn:exists(fn:doc())";
-    	boolean response = dbClient.newServerEval().xquery(query1).eval().next().getBoolean();
-    	Assert.assertFalse(response);   
-	}
 	
 	@Test
 	public void testServerXQueryTransformSuccess() throws Exception
@@ -1394,38 +1423,32 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
        	t1.join();
        	t2.join();
        	t3.join();
-
-       	
-       	System.out.println("Count is "+dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+       	    	
 		Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==300);
 	}
 	
 	@Test
-	public void testAddMultiThreadedFailure() throws Exception{
+	public void testAddMultiThreadedFailureEventCount() throws Exception{
 		
-		final String query1 = "fn:count(fn:doc())";
+		final MutableInt eventCount = new MutableInt(0);
 		ihbMT =  dmManager.newWriteHostBatcher();
        	ihbMT.withBatchSize(120);
        	ihbMT.onBatchSuccess(
 		        (client, batch) -> {
-		        	System.out.println("Success Batch size "+batch.getItems().length);
-		        	for(WriteEvent w:batch.getItems()){
-		        		System.out.println("Success "+w.getTargetUri());
+		        	synchronized(eventCount){
+		        		 eventCount.add(batch.getItems().length);
 		        	}
-		        		
+		       		        		
 		        	
 		        	
 		        	}
 		        )
 		        .onBatchFailure(
 		          (client, batch, throwable) -> {
-		        	  throwable.printStackTrace();
-		        		System.out.println("Failure Batch size "+batch.getItems().length);
-		        		for(WriteEvent w:batch.getItems()){
-		        			System.out.println("Failure "+w.getTargetUri());
-		        		}
-			        		
-		       
+		        	  	synchronized(eventCount){
+			        		 eventCount.add(batch.getItems().length);
+			        	}
+		      
 		});
 		dmManager.startJob(ihbMT);
 
@@ -1436,7 +1459,6 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
          		
            		for (int j =0 ;j < 100; j++){
     				String uri ="/local/json-"+ j;
-    				System.out.println("URI: "+ uri+ "Thread "+Thread.currentThread().getId());
     				ihbMT.add(uri, fileHandle);
     			}
            		ihbMT.flush();
@@ -1456,10 +1478,520 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
        	t1.join();
        	t2.join();
        	t3.join();
+       	System.out.println(eventCount.intValue());
+       	Assert.assertTrue(eventCount.intValue()==300);
+		
+	}
+	
+	@Test
+	public void testAddMultiThreadedMultiWriteHostBatchers() throws Exception{
+		
+		final String query1 = "fn:count(fn:doc())";
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		final MutableInt successCount = new MutableInt();
+		final MutableInt failureCount = new MutableInt();
+		
+ 		ihb2.withBatchSize(50);
+	    ihb2.onBatchSuccess(
+		   (client, batch) -> {
+			   synchronized(successCount){
+				   successCount.add(batch.getItems().length);   
+			   }
+			 	for(WriteEvent e: batch.getItems()){
+		        		System.out.println("Success : "+e.getTargetUri());
+		        	}
+		        	
+			   
+        	
+        	}
+        )
+        .onBatchFailure(
+          (client, batch, throwable) -> {
+        	   synchronized(failureCount){
+        		   failureCount.add(batch.getItems().length);   
+			   }
+        	 	for(WriteEvent e: batch.getItems()){
+		        		System.out.println("Failure : "+e.getTargetUri());
+		        	}
+		        	
+          });
+   
+
+ 		
+
+       	class MyRunnable implements Runnable {
+       	  
+       	  @Override
+       	  public void run() {
+       		  DataMovementManager dm = DataMovementManager.newInstance();
+       		  DatabaseClient dbc = DatabaseClientFactory.newClient(host, port, user, password, Authentication.DIGEST);
+       		  dm.setClient(dbc);
+       		  WriteHostBatcher ihb1 =  dm.newWriteHostBatcher();
+       		  ihb1.withBatchSize(100);
+       		  ihb1.onBatchSuccess(
+  	   			   (client, batch) -> {
+  		        	for(WriteEvent e: batch.getItems()){
+  		        		System.out.println("Success : "+e.getTargetUri());
+  		        	}
+  		        		
+  	   			   synchronized(successCount){
+  					   successCount.add(batch.getItems().length);   
+  				   }
+  	        	
+  		        	
+  		        	}
+  		        )
+  		        .onBatchFailure(
+  		          (client, batch, throwable) -> {
+  		        	   synchronized(failureCount){
+  		        		 failureCount.add(batch.getItems().length);   
+  					   }
+  		        	 	for(WriteEvent e: batch.getItems()){
+  	  		        		System.out.println("Failure : "+e.getTargetUri());
+  	  		        	}
+  	  		        	
+  		        	
+  		          });
+  	   	   
+         		
+           		for (int j =0 ;j < 1000; j++){
+           			String uri ="/local/json-"+ j;
+    				ihb1.add(uri, fileHandle);
+    				
+    				
+    			}
+           		ihb1.flush();
+       	  }  
+           		
+       	} 
+       	Thread t1;
+       	t1 = new Thread(new MyRunnable());
+       	t1.start();
+    	
+ 		for (int j =0 ;j < 1000; j++){
+ 			String uri ="/local/gson-"+ j;
+			ihb2.add(uri, stringHandle);
+			
+			
+		}
+       	ihb2.flush();
+       	t1.join();
+
+		Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==2000);
+		Assert.assertTrue(successCount.intValue()==2000);
+		Assert.assertTrue(failureCount.intValue()==0);
+	}
+	
+	
+	//ISSUE # 58
+	@Ignore
+	public void testTransactionSize() throws Exception{
+		try{
+			final String query1 = "fn:count(fn:doc())";
+		 	
+	       	final MutableInt successCount = new MutableInt(0);
+	       	
+	       	final MutableBoolean failState = new MutableBoolean(false);
+	       	final MutableInt failCount = new MutableInt(0);
+	
+	       	
+	           	
+			WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+			ihb2.withBatchSize(3000);
+			ihb2.withTransactionSize(2);
+			dmManager.startJob(ihb2);
+			
+				
+			ihb2.onBatchSuccess(
+			        (client, batch) -> {
+			        	
+			        	successCount.add(batch.getItems().length);
+			        	 System.out.println("Success Batch size "+batch.getItems().length);
+				        	for(WriteEvent w:batch.getItems()){
+				        		System.out.println("Success "+w.getTargetUri());
+				        	}
+			        	
+			        	}
+			        )
+			        .onBatchFailure(
+			          (client, batch, throwable) -> {
+			        	  throwable.printStackTrace();
+			        	  System.out.println("Failure Batch size "+batch.getItems().length);
+				        	for(WriteEvent w:batch.getItems()){
+				        		System.out.println("Failure "+w.getTargetUri());
+				        	}
+			        	  failState.setTrue();
+			        	  failCount.add(batch.getItems().length);
+			          });
+			for (int j =0 ;j < 500; j++){
+				String uri ="/local/ABC-"+ j;
+				ihb2.add(uri, stringHandle);
+			}
+		
+			
+		    ihb2.flush();
+		    
+	    	System.out.println("Fail : "+failCount.intValue());
+	    	System.out.println("Success : "+successCount.intValue());
+	    	System.out.println("Count : "+ dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+	    	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==500);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
+	@Test
+	public void testNPECallBack() throws Exception{
+		
+		final String query1 = "fn:count(fn:doc())";
+	 	
+       	final MutableInt successCount = new MutableInt(0);
+       	
+       	final MutableBoolean failState = new MutableBoolean(false);
+       	final MutableInt failCount = new MutableInt(0);
 
        	
-       	System.out.println("Count is "+dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
-		Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==100);
+           	
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		ihb2.withBatchSize(5);
+		dmManager.startJob(ihb2);
+		
+	
+		
+		ihb2.onBatchSuccess(
+		        (client, batch) -> {
+		        	String s= null;
+		        	s.length();
+		        	System.out.println("Success host : "+client.getHost());
+		        	System.out.println(batch.getItems().length);
+		        	successCount.add(batch.getItems().length);
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  failState.setTrue();
+		        	  failCount.add(batch.getItems().length);
+		          });
+
+
+		for (int j =0 ;j < 30; j++){
+			String uri ="/local/json-"+ j;
+			ihb2.add(uri, stringHandle);
+		}
+							
+    	System.out.println("Fail : "+failCount.intValue());
+    	System.out.println("Success : "+successCount.intValue());
+    	System.out.println("Count : "+ dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+    	
 	}
+
+	@Test
+	public void testInserttoDisabledAppServer() throws Exception{
+		
+		final String query1 = "fn:count(fn:doc())";
+	 	Map<String,String> properties = new HashMap<String,String>();
+     
+      	
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		ihb2.withBatchSize(3000);
+		
+		
+		ihb2.onBatchSuccess(
+		        (client, batch) -> {
+		         	System.out.println("Success Batch size "+batch.getItems().length);
+		        	for(WriteEvent w:batch.getItems()){
+		        		System.out.println("Success "+w.getTargetUri());
+		        	}
+		        
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  	throwable.printStackTrace();
+		        	 	System.out.println("Failure Batch size "+batch.getItems().length);
+			        	for(WriteEvent w:batch.getItems()){
+			        		System.out.println("Failure "+w.getTargetUri());
+			        	}
+		          });
+		
+		dmManager.startJob(ihb2);
+		for (int j =0 ;j < 200; j++){
+			String uri ="/local/json-"+ j;
+			ihb2.add(uri, stringHandle);
+		}
+
+		properties.put("server-name",dbName+"-Server");
+		properties.put("group-name", "Default");
+		properties.put("enabled", "false");
+		changeProperty(properties,"/manage/v2/servers/"+dbName+"-Server/properties");
+		Thread.currentThread().sleep(1000L);
+		ihb2.flush();
+		
+		properties.put("enabled", "true");
+		changeProperty(properties,"/manage/v2/servers/"+dbName+"-Server/properties");
+		
+
+    	Assert.assertTrue(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue()==0);
+    	
+	}
+	
+	@Ignore
+	public void testDisableAppServerDuringInsert() throws Exception{
+		
+		Thread t1 = new Thread(new StopServerRunnable());
+     	t1.setName("Status Check");
+     	  	
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		ihb2.withBatchSize(5);
+		
+		
+		ihb2.onBatchSuccess(
+		        (client, batch) -> {
+		         	System.out.println("Success Batch size "+batch.getItems().length);
+		        	for(WriteEvent w:batch.getItems()){
+		        		System.out.println("Success "+w.getTargetUri());
+		        	}
+		        
+		        	
+		        	}
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  	throwable.printStackTrace();
+		        	 	System.out.println("Failure Batch size "+batch.getItems().length);
+			        	for(WriteEvent w:batch.getItems()){
+			        		System.out.println("Failure "+w.getTargetUri());
+			        	}
+		          });
+		
+		dmManager.startJob(ihb2);
+		t1.start();
+		
+		for (int j =0 ;j < 2000; j++){
+			String uri ="/local/json-"+ j;
+			ihb2.add(uri, fileHandle);
+		}
+				
+		ihb2.flush();
+		t1.join();
+    	
+    	
+	}
+	class StopServerRunnable implements Runnable {
+	  final String query1 = "fn:count(fn:doc())";
+	  Map<String,String> properties = new HashMap<String,String>();
+	
+   	  @Override
+   	  public void run() {
+   		  properties.put("server-name",dbName+"-Server");
+		  properties.put("group-name", "Default");
+		  properties.put("enabled", "false");
+   		  boolean state = true;
+   		  while (state){
+   			 int count =dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue();
+   			 System.out.println("Count is "+count);
+   			 if(count >= 100){
+   				
+     			changeProperty(properties,"/manage/v2/servers/"+dbName+"-Server/properties");
+     			state=false;
+   			 }
+   				
+   		  }
+   	  }  
+       		
+  } 
+	
+	@Test
+	public void testDisableDBDuringInsert() throws Exception{
+		
+	    Thread t1 = new Thread(new DisabledDBRunnable());
+		MutableBoolean failCheck = new MutableBoolean(false);
+		MutableInt successCount = new MutableInt(0);
+		MutableInt failureCount = new MutableInt(0);
+		
+     	t1.setName("Status Check");
+     	Map<String,String> properties = new HashMap<String,String>();  	
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		ihb2.withBatchSize(5);
+				
+		ihb2.onBatchSuccess(
+		        (client, batch) -> {
+		        	successCount.add(batch.getItems().length);
+		          	
+		        	
+		        	
+		          }
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  failCheck.setTrue();
+		        	  failureCount.add(batch.getItems().length);
+		        	  throwable.printStackTrace();
+		        	        
+			        	
+			        	
+
+		           
+		          });
+		dmManager.startJob(ihb2);
+		t1.start();
+		
+		for (int j =0 ;j < 1000; j++){
+			String uri ="/local/json-"+ j;
+			ihb2.add(uri, fileHandle);
+		}
+				
+		ihb2.flush();
+		t1.join();
+		properties.put("enabled", "true");
+		changeProperty(properties,"/manage/v2/databases/"+dbName+"/properties");
+		Assert.assertTrue(failCheck.booleanValue());
+		Assert.assertTrue(successCount.intValue() >= 100);
+		Assert.assertTrue(successCount.intValue() < 1000);
+		Assert.assertTrue(failureCount.intValue() <= 900);
+		
+    	
+	}
+	class DisabledDBRunnable implements Runnable {
+	  final String query1 = "fn:count(fn:doc())";
+	  Map<String,String> properties = new HashMap<String,String>();
+	
+   	  @Override
+   	  public void run() {
+   	
+		  properties.put("enabled", "false");
+
+			
+   		  boolean state = true;
+   		  while (state){
+   			 int count =dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue();
+   			 System.out.println("Count is "+count);
+   			 if(count >= 100){
+   				changeProperty(properties,"/manage/v2/databases/"+dbName+"/properties");
+     			
+     			state=false;
+   			 }
+   				
+   		  }
+   	  }  
+       		
+  } 
+	
+
+	@Ignore
+	public void testOfflineForestStopServerDuringInsert() throws Exception{
+		
+		Thread t1 = new Thread(new OffLineForestStopServerRunnable());
+		MutableBoolean failCheck = new MutableBoolean(false);
+		MutableInt successCount = new MutableInt(0);
+		MutableInt failureCount = new MutableInt(0);
+		
+     	t1.setName("Status Check");
+     	Map<String,String> properties = new HashMap<String,String>(); 
+     	
+     	properties.put("forest-name","WriteHostBatcher-1");
+     	properties.put("availability","offline");
+     	changeProperty(properties,"/manage/v2/forests/WriteHostBatcher-1/properties");
+     	properties.clear();
+     	
+		WriteHostBatcher ihb2 =  dmManager.newWriteHostBatcher();
+		ihb2.withBatchSize(5);
+				
+		ihb2.onBatchSuccess(
+		        (client, batch) -> {
+		        	successCount.add(batch.getItems().length);
+		        	
+		        	System.out.println("Success host: "+client.getHost());
+		        	System.out.println("Success Batch size "+batch.getItems().length);
+		        	for(WriteEvent w:batch.getItems()){
+		        		System.out.println("Success "+w.getTargetUri());
+		        	}
+		        
+		        	
+		        	
+		        	
+		          }
+		        )
+		        .onBatchFailure(
+		          (client, batch, throwable) -> {
+		        	  failCheck.setTrue();
+		        	  failureCount.add(batch.getItems().length);
+		        	  throwable.printStackTrace();
+		        	  System.out.println("Failure host: "+client.getHost());
+		        	  System.out.println("Failure Batch size "+batch.getItems().length);
+			        	for(WriteEvent w:batch.getItems()){
+			        		System.out.println("Failure "+w.getTargetUri());
+			        	}
+			        
+			        	
+			        	
+
+		           
+		          });
+		dmManager.startJob(ihb2);
+		t1.start();
+		
+		for (int j =0 ;j < 10000; j++){
+			String uri ="/local/json-"+ j;
+			ihb2.add(uri, fileHandle);
+		}
+				
+		ihb2.flush();
+		t1.join();
+		
+				
+     	properties.put("forest-name","WriteHostBatcher-1");
+     	properties.put("availability","online");
+     	changeProperty(properties,"/manage/v2/forests/WriteHostBatcher-1/properties");
+     	
+		Assert.assertTrue(failCheck.booleanValue());
+		Assert.assertTrue(successCount.intValue() >= 100);
+		Assert.assertTrue(failureCount.intValue() <= 900);
+    	
+	}
+	
+	class OffLineForestStopServerRunnable implements Runnable {
+	  final String query1 = "fn:count(fn:doc())";
+	  Map<String,String> properties = new HashMap<String,String>();
+	
+   	  @Override
+   	  public void run() {
+  		properties.put("host-name", hostNames[0]);
+  		properties.put("group", "default");
+  		properties.put("state", "shutdown");
+
+			
+   		  boolean state = true;
+   		  while (state){
+   			 int count =dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue();
+   			 System.out.println("Count is "+count);
+   			 if(count >= 100){
+   				changeProperty(properties,"/manage/v2/hosts/"+hostNames[0]+"/properties");
+     			
+     			state=false;
+   			 }
+   				
+   		  }
+   		try {
+			Thread.currentThread().sleep(35000L);
+			properties.clear();
+			properties.put("host-name", hostNames[0]);
+			properties.put("group", "default");
+			properties.put("state", "restart");
+			changeProperty(properties,"/manage/v2/hosts/"+hostNames[0]+"/properties");
+			
+			Thread.currentThread().sleep(5000L);
+	     	System.out.println(dbClient.newServerEval().xquery(query1).eval().next().getNumber().intValue());
+	     	
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+   	  }  
+       		
+  } 
 	
 }
