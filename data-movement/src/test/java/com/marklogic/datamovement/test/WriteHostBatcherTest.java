@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.Random;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -56,7 +57,8 @@ public class WriteHostBatcherTest {
   private static String uri3 = "ImportHostBatcherTest_content_3.txt";
   private static String uri4 = "ImportHostBatcherTest_content_4.txt";
   private static String transform = "ImportHostBatcherTest_transform.sjs";
-  private static String testTransactionsCollection = "ImportHostBatcherTest.testTransactions";
+  private static String testTransactionsCollection = "ImportHostBatcherTest.testTransactions_" +
+    new Random().nextInt(10000);
 
 
   @BeforeClass
