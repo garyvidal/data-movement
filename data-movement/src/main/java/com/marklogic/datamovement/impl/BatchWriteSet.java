@@ -35,7 +35,7 @@ public class BatchWriteSet {
   private Forest forest;
   private Runnable onSuccess;
   private Consumer<Throwable> onFailure;
-  private AtomicBoolean transactionRolledBack;
+  private AtomicBoolean transactionAlive;
 
   public static class WriteEventImpl 
     extends DataMovementEventImpl<WriteEventImpl>
@@ -54,7 +54,7 @@ public class BatchWriteSet {
   }
 
   public BatchWriteSet(DocumentWriteSet writeSet, DatabaseClient client, Transaction transaction,
-    Forest forest, ServerTransform transform, String temporalCollection, AtomicBoolean transactionRolledBack)
+    Forest forest, ServerTransform transform, String temporalCollection, AtomicBoolean transactionAlive)
   {
     this.writeSet = writeSet;
     this.client = client;
@@ -62,7 +62,7 @@ public class BatchWriteSet {
     this.forest = forest;
     this.transform = transform;
     this.temporalCollection = temporalCollection;
-    this.transactionRolledBack = transactionRolledBack;
+    this.transactionAlive = transactionAlive;
   }
 
   public DocumentWriteSet getWriteSet() {
@@ -129,12 +129,12 @@ public class BatchWriteSet {
     this.onFailure = onFailure;
   }
 
-  public boolean getTransactionRolledBack() {
-    return transactionRolledBack.get();
+  public boolean getTransactionAlive() {
+    return transactionAlive.get();
   }
 
-  public void setTransactionRolledBack(AtomicBoolean transactionRolledBack) {
-    this.transactionRolledBack = transactionRolledBack;
+  public void setTransactionAlive(AtomicBoolean transactionAlive) {
+    this.transactionAlive = transactionAlive;
   }
 
   public Batch<WriteEvent> getBatchOfWriteEvents() {
