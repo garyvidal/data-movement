@@ -15,18 +15,27 @@
  */
 package com.marklogic.datamovement.impl;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.Transaction;
-import com.marklogic.client.document.DocumentManager;
 import com.marklogic.client.document.DocumentWriteSet;
+import com.marklogic.client.document.ServerTransform;
 import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.WriteEvent;
 
 public class BatchWriteSet {
   private DocumentWriteSet writeSet;
+  private DatabaseClient client;
   private Transaction transaction;
-  private int batchNumberInTransaction;
+  private ServerTransform transform;
+  private String temporalCollection;
   private Forest forest;
+  private Runnable onSuccess;
+  private Consumer<Throwable> onFailure;
+  private AtomicBoolean transactionRolledBack;
 
   public static class WriteEventImpl 
     extends DataMovementEventImpl<WriteEventImpl>
@@ -44,13 +53,16 @@ public class BatchWriteSet {
     }
   }
 
-  public BatchWriteSet(int batchNumberInTransaction, DocumentWriteSet writeSet,
-    Transaction transaction, Forest forest)
+  public BatchWriteSet(DocumentWriteSet writeSet, DatabaseClient client, Transaction transaction,
+    Forest forest, ServerTransform transform, String temporalCollection, AtomicBoolean transactionRolledBack)
   {
-    this.batchNumberInTransaction = batchNumberInTransaction;
     this.writeSet = writeSet;
+    this.client = client;
     this.transaction = transaction;
     this.forest = forest;
+    this.transform = transform;
+    this.temporalCollection = temporalCollection;
+    this.transactionRolledBack = transactionRolledBack;
   }
 
   public DocumentWriteSet getWriteSet() {
@@ -61,6 +73,14 @@ public class BatchWriteSet {
     this.writeSet = writeSet;
   }
 
+  public DatabaseClient getClient() {
+    return client;
+  }
+
+  public void setClient(DatabaseClient client) {
+    this.client = client;
+  }
+
   public Transaction getTransaction() {
     return transaction;
   }
@@ -69,12 +89,20 @@ public class BatchWriteSet {
     this.transaction = transaction;
   }
 
-  public int getBatchNumberInTransaction() {
-    return batchNumberInTransaction;
+  public ServerTransform getTransform() {
+    return transform;
   }
 
-  public void setBatchNumberInTransaction(int batchNumberInTransaction) {
-    this.batchNumberInTransaction = batchNumberInTransaction;
+  public void setTransform(ServerTransform transform) {
+    this.transform = transform;
+  }
+
+  public String getTemporalCollection() {
+    return temporalCollection;
+  }
+
+  public void setTemporalCollection(String temporalCollection) {
+    this.temporalCollection = temporalCollection;
   }
 
   public Forest getForest() {
@@ -83,6 +111,30 @@ public class BatchWriteSet {
 
   public void setForest(Forest forest) {
     this.forest = forest;
+  }
+
+  public Runnable getOnSuccess() {
+    return onSuccess;
+  }
+
+  public void onSuccess(Runnable onSuccess) {
+    this.onSuccess = onSuccess;
+  }
+
+  public Consumer<Throwable>  getOnFailure() {
+    return onFailure;
+  }
+
+  public void onFailure(Consumer<Throwable>  onFailure) {
+    this.onFailure = onFailure;
+  }
+
+  public boolean getTransactionRolledBack() {
+    return transactionRolledBack.get();
+  }
+
+  public void setTransactionRolledBack(AtomicBoolean transactionRolledBack) {
+    this.transactionRolledBack = transactionRolledBack;
   }
 
   public Batch<WriteEvent> getBatchOfWriteEvents() {

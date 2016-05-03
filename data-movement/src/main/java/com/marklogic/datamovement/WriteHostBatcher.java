@@ -15,6 +15,8 @@
  */
 package com.marklogic.datamovement;
 
+import java.util.concurrent.TimeUnit;
+
 import com.marklogic.client.document.ServerTransform;
 import com.marklogic.client.io.marker.AbstractWriteHandle;
 import com.marklogic.client.io.marker.DocumentMetadataWriteHandle;
@@ -32,6 +34,9 @@ public interface WriteHostBatcher extends HostBatcher<WriteHostBatcher> {
   /** Treat any remaining batches as if they're full and send them */
   public void flush();
   public void finalize(); // calls flush()
+  public boolean awaitCompletion(long timeout, TimeUnit unit) throws InterruptedException;
+  public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException;
+
 
   public WriteHostBatcher withTransactionSize(int transactionSize);
   public int getTransactionSize();
