@@ -57,7 +57,7 @@ public class WriteHostBatcherTest {
   private static String uri3 = "ImportHostBatcherTest_content_3.txt";
   private static String uri4 = "ImportHostBatcherTest_content_4.txt";
   private static String transform = "ImportHostBatcherTest_transform.sjs";
-  private static String testTransactionsCollection = "ImportHostBatcherTest.testTransactions_" +
+  private static String testTransactionsCollection = "ImportHostBatcherTest.testMultiThreadWithTransactions_" +
     new Random().nextInt(10000);
 
 
@@ -145,89 +145,115 @@ public class WriteHostBatcherTest {
   }
 
   @Test
-  public void testTransactions() throws Exception {
+  public void testMultiThreadWithTransactions() throws Exception {
+    testMultiThreadWithTransactions(0, 0, 1, 0, 10, "zeros");
+    testMultiThreadWithTransactions(  1, 1, 1, 1, 10, "ones");
+    testMultiThreadWithTransactions(1, 1, 3, 1, 10, "threads");
+    testMultiThreadWithTransactions(1, 2, 3, 3, 30, "transactionsThreads");
+    testMultiThreadWithTransactions(2, 2, 3, 3, 30, "batchesTransactionsThreads");
+    testMultiThreadWithTransactions(2, 1, 20, 20, 200, "batchesThreads");
+    testMultiThreadWithTransactions(2, 4, 20, 20, 200, "everything");
+  }
+
+  public void testMultiThreadWithTransactions( int batchSize, int transactionSize,
+    int externalThreadCount, int batcherThreadCount, int totalDocCount, String testName)
+  {
+    String config = "{ batchSize:           " + batchSize + ",\n" + 
+                    "  transactionSize:     " + transactionSize + ",\n" + 
+                    "  externalThreadCount: " + externalThreadCount + ",\n" + 
+                    "  batcherThreadCount:  " + batcherThreadCount + ",\n" + 
+                    "  totalDocCount:       " + totalDocCount + " }"; 
+    System.out.println("Starting test " + testName + " with config=" + config);
+
+    String testCollection = testTransactionsCollection + "_" + testName;
+    long start = System.currentTimeMillis();
     moveMgr.setClient(client);
 
-    final AtomicInteger successListenerWasRun = new AtomicInteger(0);
-    final AtomicInteger failListenerWasRun = new AtomicInteger(0);
+    final AtomicInteger successfulCount = new AtomicInteger(0);
+    final AtomicInteger failureCount = new AtomicInteger(0);
     WriteHostBatcher batcher = moveMgr.newWriteHostBatcher()
-      .withBatchSize(2)
-      .withTransactionSize(2)
-      .withThreadCount(2)
+      .withBatchSize(batchSize)
+      .withTransactionSize(transactionSize)
+      .withThreadCount(batcherThreadCount)
       .onBatchSuccess(
         (client, batch) -> {
-          successListenerWasRun.incrementAndGet();
           for ( WriteEvent event : batch.getItems() ) {
+            successfulCount.incrementAndGet();
 System.out.println("DEBUG: [WriteHostBatcherTest.onBatchSuccess] event.getTargetUri()=[" + event.getTargetUri() + "]");
           }
-          assertEquals("There should be two items in the batch", 2, batch.getItems().length);
+          assertEquals("There should be " + batchSize + " items in the batch", batchSize, batch.getItems().length);
         }
       )
       .onBatchFailure(
         (client, batch, throwable) -> {
           throwable.printStackTrace();
-          failListenerWasRun.incrementAndGet();
           for ( WriteEvent event : batch.getItems() ) {
+            failureCount.incrementAndGet();
 System.out.println("DEBUG: [WriteHostBatcherTest.onBatchFailure] event.getTargetUri()=[" + event.getTargetUri() + "]");
           }
-          assertEquals("There should be two items in the batch", 2, batch.getItems().length);
+          assertEquals("There should be " + batchSize + " items in the batch", batchSize, batch.getItems().length);
         }
       );
     JobTicket ticket = moveMgr.startJob(batcher);
 
     DocumentMetadataHandle meta = new DocumentMetadataHandle()
-      .withCollections(testTransactionsCollection);
+      .withCollections(testTransactionsCollection, testCollection);
 
     class MyRunnable implements Runnable {
 
       @Override
       public void run() {
 
-        // first write four valid docs
-        for (int j =1 ;j < 5; j++){
-          String uri = "/" + testTransactionsCollection + "/"+ Thread.currentThread().getName() + "/" + j + ".txt";
+        String threadName = Thread.currentThread().getName();
+        // first write half the valid docs
+        int docsPerExternalThread = (int) totalDocCount / externalThreadCount;
+        int halfway = (int) docsPerExternalThread / 2;
+        for (int j =1 ;j < halfway; j++){
+          String uri = "/" + testCollection + "/"+ threadName + "/" + j + ".txt";
           batcher.add(uri, meta, new StringHandle("test").withFormat(Format.TEXT));
         }
 
         // then write one invalid doc
         // each transaction (two batches) with this doc will fail to write
         // because we say withFormat(JSON) but it isn't valid JSON.
-        StringHandle doc3 = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
+        StringHandle nonJson = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
           .withFormat(Format.JSON);
-        batcher.add("doc3.json", meta, doc3);
+        String badUri = "/" + testCollection + "/"+ threadName + "/bad.json";
+        batcher.add(badUri, meta, nonJson);
 
-        // then write five more valid docs
-        for (int j =5 ;j < 10; j++){
-          String uri = "/" + testTransactionsCollection + "/"+ Thread.currentThread().getName() + "/" + j + ".txt";
+        // then write the second half of valid docs
+        for (int j =halfway; j <= docsPerExternalThread; j++){
+          String uri = "/" + testCollection + "/"+ threadName + "/" + j + ".txt";
           batcher.add(uri, meta, new StringHandle("test").withFormat(Format.TEXT));
         }
 
       }
     }
-    Thread t1,t2,t3;
-    t1 = new Thread(new MyRunnable());
-    t2 = new Thread(new MyRunnable());
-    t3 = new Thread(new MyRunnable());
-    t1.start();
-    t2.start();
-    t3.start();
+    Thread[] externalThreads = new Thread[externalThreadCount];
+    for ( int i=0; i < externalThreads.length; i++ ) {
+      externalThreads[i] = new Thread(new MyRunnable(), testName + i);
+      externalThreads[i].start();
+    }
 
-    t1.join();
-    t2.join();
-    t3.join();
+    for ( Thread thread : externalThreads ) {
+      try { thread.join(); } catch (Exception e) {}
+    }
     batcher.flush();
 
-System.out.println("DEBUG: [WriteHostBatcherTest] successListenerWasRun.get()=[" + successListenerWasRun.get() + "]");
-System.out.println("DEBUG: [WriteHostBatcherTest] failListenerWasRun.get()=[" + failListenerWasRun.get() + "]");
+System.out.println("DEBUG: [WriteHostBatcherTest] successfulCount.get()=[" + successfulCount.get() + "]");
+System.out.println("DEBUG: [WriteHostBatcherTest] failureCount.get()=[" + failureCount.get() + "]");
     /*
     assertEquals("The success listener should have run six times",
       6, successListenerWasRun.get());
     assertEquals("The failure listener should have run five times", 
-      5, failListenerWasRun.get());
+      5, failureCount.get());
     */
 
-    QueryDefinition query = new StructuredQueryBuilder().collection(testTransactionsCollection);
+    QueryDefinition query = new StructuredQueryBuilder().collection(testCollection);
     DocumentPage docs = docMgr.search(query, 1);
-    assertEquals("there should be twenty four docs in the collection", 24, docs.getTotalSize());
+    assertEquals("there should be " + successfulCount + " docs in the collection", successfulCount.get(), docs.getTotalSize());
+
+    long duration = System.currentTimeMillis() - start;
+    System.out.println("Completed test " + testName + " in " + duration + " millis");
   }
 }
