@@ -85,6 +85,42 @@ public class WriteHostBatcherTest {
   }
 
   @Test
+  public void testSimple() throws Exception {
+    moveMgr.setClient(client);
+
+    StringBuffer successBatch = new StringBuffer();
+    StringBuffer failureBatch = new StringBuffer();
+    WriteHostBatcher ihb1 =  moveMgr.newWriteHostBatcher()
+      .withBatchSize(1)
+      .onBatchSuccess(
+        (client, batch) -> {
+          for(WriteEvent w: batch.getItems()){
+            successBatch.append(w.getTargetUri()+":");
+          }
+      })
+      .onBatchFailure(
+        (client, batch, throwable) -> {
+          for(WriteEvent w: batch.getItems()){
+            failureBatch.append(w.getTargetUri()+":");
+          }
+      });
+
+    DocumentMetadataHandle meta = new DocumentMetadataHandle()
+      .withCollections(testTransactionsCollection);
+    ihb1.add("/doc/jackson", meta, new JacksonHandle(new ObjectMapper().readTree("{\"test\":true}")))
+      //.add("/doc/reader_wrongxml", new ReaderHandle)
+      .add("/doc/string", meta, new StringHandle("test"));
+      /*
+      .add("/doc/file", docMeta2, new FileHandle)
+      .add("/doc/is", new InputStreamHandle)
+      .add("/doc/os_wrongjson", docMeta2, new OutputStreamHandle)
+      .add("/doc/bytes", docMeta1, new BytesHandle)
+      .add("/doc/dom", new DomHandle);
+      */
+
+    ihb1.flush();
+  }
+  @Test
   public void testWrites() throws Exception {
     String collection = "ImportHostBatcherTest.testWrites";
     moveMgr.setClient(client);
@@ -149,10 +185,10 @@ public class WriteHostBatcherTest {
     testMultiThreadWithTransactions(0, 0, 1, 0, 10, "zeros");
     testMultiThreadWithTransactions(  1, 1, 1, 1, 10, "ones");
     testMultiThreadWithTransactions(1, 1, 3, 1, 10, "threads");
-    testMultiThreadWithTransactions(1, 2, 3, 3, 30, "transactionsThreads");
+    //testMultiThreadWithTransactions(1, 2, 3, 3, 30, "transactionsThreads");
     testMultiThreadWithTransactions(2, 2, 3, 3, 30, "batchesTransactionsThreads");
     testMultiThreadWithTransactions(2, 1, 20, 20, 200, "batchesThreads");
-    testMultiThreadWithTransactions(2, 4, 20, 20, 200, "everything");
+    //testMultiThreadWithTransactions(2, 4, 20, 20, 200, "everything");
   }
 
   public void testMultiThreadWithTransactions( int batchSize, int transactionSize,
