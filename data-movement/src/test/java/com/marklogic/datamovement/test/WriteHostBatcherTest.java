@@ -153,6 +153,7 @@ public class WriteHostBatcherTest {
     WriteHostBatcher batcher = moveMgr.newWriteHostBatcher()
       .withBatchSize(2)
       .withTransactionSize(2)
+      .withThreadCount(2)
       .onBatchSuccess(
         (client, batch) -> {
           successListenerWasRun.incrementAndGet();
@@ -164,6 +165,7 @@ System.out.println("DEBUG: [WriteHostBatcherTest.onBatchSuccess] event.getTarget
       )
       .onBatchFailure(
         (client, batch, throwable) -> {
+          throwable.printStackTrace();
           failListenerWasRun.incrementAndGet();
           for ( WriteEvent event : batch.getItems() ) {
 System.out.println("DEBUG: [WriteHostBatcherTest.onBatchFailure] event.getTargetUri()=[" + event.getTargetUri() + "]");
