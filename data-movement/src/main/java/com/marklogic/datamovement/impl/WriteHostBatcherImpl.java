@@ -670,13 +670,13 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThre
             writeSet.getWriteSet(), writeSet.getTransform(),
             transaction, writeSet.getTemporalCollection()
           );
-          transactionInfo.written.set(true);
+          if ( transactionInfo != null ) transactionInfo.written.set(true);
           Runnable onSuccess = writeSet.getOnSuccess();
           if ( onSuccess != null ) {
             onSuccess.run();
           }
         } else {
-          throw new DataMovementException("Failed to write because transaction already underwent rollback", null);
+          throw new DataMovementException("Failed to write because transaction already underwent commit or rollback", null);
         }
       } catch (Throwable t) {
 System.out.println("DEBUG: [WriteHostBatcherImpl] t=[" + t + "]");
