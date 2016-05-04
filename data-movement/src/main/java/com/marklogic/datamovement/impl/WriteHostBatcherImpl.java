@@ -662,7 +662,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThre
         if ( onBeforeWrite != null ) {
           onBeforeWrite.run();
         }
-System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThread().getName() + "] writeSet.getTransactionInfo().alive.get()=[" + writeSet.getTransactionInfo().alive.get() + "]");
         TransactionInfo transactionInfo = writeSet.getTransactionInfo();
         if ( transactionInfo == null || transactionInfo.alive.get() == true ) {
           Transaction transaction = null;
