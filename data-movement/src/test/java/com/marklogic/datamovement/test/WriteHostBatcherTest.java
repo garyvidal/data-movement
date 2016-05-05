@@ -16,6 +16,7 @@
 package com.marklogic.datamovement.test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -57,13 +58,13 @@ public class WriteHostBatcherTest {
   private static String uri3 = "WriteHostBatcherTest_content_3.txt";
   private static String uri4 = "WriteHostBatcherTest_content_4.txt";
   private static String transform = "WriteHostBatcherTest_transform.sjs";
-  private static String testTransactionsCollection = "WriteHostBatcherTest.runWriteTest_" +
+  private static String whbTestCollection = "WriteHostBatcherTest_" +
     new Random().nextInt(10000);
 
 
   @BeforeClass
   public static void beforeClass() {
-    client = Common.connect();
+    client = Common.connectEval();
     docMgr = client.newDocumentManager();
     installModule();
   }
@@ -73,7 +74,7 @@ public class WriteHostBatcherTest {
     docMgr.delete(uri1, uri2, uri3);
     QueryManager queryMgr = client.newQueryManager();
     DeleteQueryDefinition deleteQuery = queryMgr.newDeleteDefinition();
-    deleteQuery.setCollections(testTransactionsCollection);
+    deleteQuery.setCollections(whbTestCollection);
     queryMgr.delete(deleteQuery);
 
     client.release();
@@ -87,6 +88,7 @@ public class WriteHostBatcherTest {
   @Test
   public void testSimple() throws Exception {
     moveMgr.setClient(client);
+    String collection = whbTestCollection + ".testSimple";
 
     StringBuffer successBatch = new StringBuffer();
     StringBuffer failureBatch = new StringBuffer();
@@ -106,7 +108,7 @@ public class WriteHostBatcherTest {
       });
 
     DocumentMetadataHandle meta = new DocumentMetadataHandle()
-      .withCollections(testTransactionsCollection);
+      .withCollections(collection, whbTestCollection);
     ihb1.add("/doc/jackson", meta, new JacksonHandle(new ObjectMapper().readTree("{\"test\":true}")))
       //.add("/doc/reader_wrongxml", new ReaderHandle)
       .add("/doc/string", meta, new StringHandle("test"));
@@ -122,7 +124,7 @@ public class WriteHostBatcherTest {
   }
   @Test
   public void testWrites() throws Exception {
-    String collection = "WriteHostBatcherTest.testWrites";
+    String collection = whbTestCollection + ".testWrites";
     moveMgr.setClient(client);
 
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
@@ -151,7 +153,7 @@ public class WriteHostBatcherTest {
     JobTicket ticket = moveMgr.startJob(batcher);
 
     DocumentMetadataHandle meta = new DocumentMetadataHandle()
-      .withCollections(collection);
+      .withCollections(collection, whbTestCollection);
     JsonNode doc1 = new ObjectMapper().readTree("{ \"testProperty\": \"test1\" }");
     JsonNode doc2 = new ObjectMapper().readTree("{ \"testProperty2\": \"test2\" }");
     // the batch with this doc will fail to write because we say withFormat(JSON)
@@ -225,10 +227,11 @@ public class WriteHostBatcherTest {
                     "  totalDocCount:       " + totalDocCount + " }"; 
     System.out.println("Starting test " + testName + " with config=" + config);
 
-    String testCollection = testTransactionsCollection + "_" + testName;
+    String collection = whbTestCollection + ".testWrites_" + testName;
     long start = System.currentTimeMillis();
     moveMgr.setClient(client);
 
+    int expectedBatchSize = (batchSize > 0) ? batchSize : 1;
     final AtomicInteger successfulCount = new AtomicInteger(0);
     final AtomicInteger failureCount = new AtomicInteger(0);
     WriteHostBatcher batcher = moveMgr.newWriteHostBatcher()
@@ -241,7 +244,8 @@ public class WriteHostBatcherTest {
             successfulCount.incrementAndGet();
 System.out.println("DEBUG: [WriteHostBatcherTest.onBatchSuccess] event.getTargetUri()=[" + event.getTargetUri() + "]");
           }
-          assertEquals("There should be " + batchSize + " items in the batch", batchSize, batch.getItems().length);
+          assertEquals("There should be " + expectedBatchSize + " items in the batch",
+            expectedBatchSize, batch.getItems().length);
         }
       )
       .onBatchFailure(
@@ -251,13 +255,14 @@ System.out.println("DEBUG: [WriteHostBatcherTest.onBatchSuccess] event.getTarget
             failureCount.incrementAndGet();
 System.out.println("DEBUG: [WriteHostBatcherTest.onBatchFailure] event.getTargetUri()=[" + event.getTargetUri() + "]");
           }
-          assertEquals("There should be " + batchSize + " items in the batch", batchSize, batch.getItems().length);
+          assertEquals("There should be " + expectedBatchSize + " items in the batch",
+            expectedBatchSize, batch.getItems().length);
         }
       );
     JobTicket ticket = moveMgr.startJob(batcher);
 
     DocumentMetadataHandle meta = new DocumentMetadataHandle()
-      .withCollections(testTransactionsCollection, testCollection);
+      .withCollections(whbTestCollection, collection);
 
     class MyRunnable implements Runnable {
 
@@ -269,7 +274,7 @@ System.out.println("DEBUG: [WriteHostBatcherTest.onBatchFailure] event.getTarget
         int docsPerExternalThread = (int) totalDocCount / externalThreadCount;
         int halfway = (int) docsPerExternalThread / 2;
         for (int j =1 ;j < halfway; j++){
-          String uri = "/" + testCollection + "/"+ threadName + "/" + j + ".txt";
+          String uri = "/" + collection + "/"+ threadName + "/" + j + ".txt";
           batcher.add(uri, meta, new StringHandle("test").withFormat(Format.TEXT));
         }
 
@@ -278,12 +283,12 @@ System.out.println("DEBUG: [WriteHostBatcherTest.onBatchFailure] event.getTarget
         // because we say withFormat(JSON) but it isn't valid JSON.
         StringHandle nonJson = new StringHandle("<thisIsNotJson>test3</thisIsNotJson>")
           .withFormat(Format.JSON);
-        String badUri = "/" + testCollection + "/"+ threadName + "/bad.json";
+        String badUri = "/" + collection + "/"+ threadName + "/bad.json";
         batcher.add(badUri, meta, nonJson);
 
         // then write the second half of valid docs
         for (int j =halfway; j <= docsPerExternalThread; j++){
-          String uri = "/" + testCollection + "/"+ threadName + "/" + j + ".txt";
+          String uri = "/" + collection + "/"+ threadName + "/" + j + ".txt";
           batcher.add(uri, meta, new StringHandle("test").withFormat(Format.TEXT));
         }
 
@@ -309,11 +314,137 @@ System.out.println("DEBUG: [WriteHostBatcherTest] failureCount.get()=[" + failur
       5, failureCount.get());
     */
 
-    QueryDefinition query = new StructuredQueryBuilder().collection(testCollection);
+    QueryDefinition query = new StructuredQueryBuilder().collection(collection);
     DocumentPage docs = docMgr.search(query, 1);
     assertEquals("there should be " + successfulCount + " docs in the collection", successfulCount.get(), docs.getTotalSize());
 
     long duration = System.currentTimeMillis() - start;
     System.out.println("Completed test " + testName + " in " + duration + " millis");
+  }
+
+  @Test
+  public void testAddMultiThreadedSuccess_Issue61() throws Exception{
+    moveMgr.setClient(client);
+
+    String collection = whbTestCollection + ".testAddMultiThreadedSuccess_Issue61";
+    String query1 = "fn:count(fn:collection('" + collection + "'))";
+    WriteHostBatcher batcher =  moveMgr.newWriteHostBatcher();
+    batcher.withBatchSize(100);
+    batcher.onBatchSuccess(
+        (client, batch) -> {
+        System.out.println("Batch size "+batch.getItems().length);
+        for(WriteEvent w:batch.getItems()){
+        //System.out.println("Success "+w.getTargetUri());
+        }
+
+
+
+        }
+        )
+      .onBatchFailure(
+          (client, batch, throwable) -> {
+          throwable.printStackTrace();
+          for(WriteEvent w:batch.getItems()){
+          System.out.println("Failure "+w.getTargetUri());
+          }
+
+
+          });
+    moveMgr.startJob(batcher);
+
+    DocumentMetadataHandle meta = new DocumentMetadataHandle()
+      .withCollections(collection, whbTestCollection);
+
+    class MyRunnable implements Runnable {
+
+      @Override
+        public void run() {
+
+          for (int j =0 ;j < 100; j++){
+            String uri ="/local/json-"+ j+"-"+Thread.currentThread().getId();
+            System.out.println("Thread name: "+Thread.currentThread().getName()+"  URI:"+ uri);
+            batcher.add(uri, meta, new StringHandle("test").withFormat(Format.TEXT));
+
+
+          }
+          batcher.flush();
+        }  
+
+    } 
+    Thread t1,t2,t3;
+    t1 = new Thread(new MyRunnable());
+    t2 = new Thread(new MyRunnable());
+    t3 = new Thread(new MyRunnable());
+    t1.start();
+    t2.start();
+    t3.start();
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    int docCount = client.newServerEval().xquery(query1).eval().next().getNumber().intValue();
+    assertEquals(300, docCount);
+  }
+
+  @Test
+  public void testAddMultiThreadedSuccess_Issue48() throws Exception{
+    moveMgr.setClient(client);
+
+    String collection = whbTestCollection + ".testAddMultiThreadedSuccess_Issue48";
+    String query1 = "fn:count(fn:collection('" + collection + "'))";
+    WriteHostBatcher batcher =  moveMgr.newWriteHostBatcher();
+    batcher.withBatchSize(120);
+    batcher
+      .onBatchSuccess( (client, batch) -> {
+        System.out.println("Success Batch size "+batch.getItems().length);
+        for(WriteEvent w:batch.getItems()){
+          System.out.println("Success "+w.getTargetUri());
+        }
+      })
+      .onBatchFailure( (client, batch, throwable) -> {
+        throwable.printStackTrace();
+        System.out.println("Failure Batch size "+batch.getItems().length);
+        for(WriteEvent w:batch.getItems()){
+          System.out.println("Failure "+w.getTargetUri());
+        }
+      });
+    moveMgr.startJob(batcher);
+
+    DocumentMetadataHandle meta = new DocumentMetadataHandle()
+      .withCollections(collection, whbTestCollection);
+
+    FileHandle fileHandle = new FileHandle(new File("src/test/resources/test.xml"));
+
+    class MyRunnable implements Runnable {
+
+      @Override
+        public void run() {
+
+          for (int j =0 ;j < 100; j++){
+            String uri ="/local/json-"+ j+"-"+Thread.currentThread().getId();
+            System.out.println("Thread name: "+Thread.currentThread().getName()+"  URI:"+ uri);
+            batcher.add(uri, meta, fileHandle);
+
+
+          }
+          batcher.flush();
+        } 
+
+    }
+    Thread t1,t2,t3;
+    t1 = new Thread(new MyRunnable());
+    t2 = new Thread(new MyRunnable());
+    t3 = new Thread(new MyRunnable());
+    t1.start();
+    t2.start();
+    t3.start();
+
+    t1.join();
+    t2.join();
+    t3.join();
+
+    int docCount = client.newServerEval().xquery(query1).eval().next().getNumber().intValue();
+    assertEquals(300, docCount);
   }
 }
