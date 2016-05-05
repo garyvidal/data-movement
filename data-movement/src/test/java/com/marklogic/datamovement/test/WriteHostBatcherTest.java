@@ -52,12 +52,12 @@ public class WriteHostBatcherTest {
   private DataMovementManager moveMgr = DataMovementManager.newInstance();
   private static DatabaseClient client;
   private static DocumentManager<?,?> docMgr;
-  private static String uri1 = "ImportHostBatcherTest_content_1.txt";
-  private static String uri2 = "ImportHostBatcherTest_content_2.txt";
-  private static String uri3 = "ImportHostBatcherTest_content_3.txt";
-  private static String uri4 = "ImportHostBatcherTest_content_4.txt";
-  private static String transform = "ImportHostBatcherTest_transform.sjs";
-  private static String testTransactionsCollection = "ImportHostBatcherTest.testMultiThreadWithTransactions_" +
+  private static String uri1 = "WriteHostBatcherTest_content_1.txt";
+  private static String uri2 = "WriteHostBatcherTest_content_2.txt";
+  private static String uri3 = "WriteHostBatcherTest_content_3.txt";
+  private static String uri4 = "WriteHostBatcherTest_content_4.txt";
+  private static String transform = "WriteHostBatcherTest_transform.sjs";
+  private static String testTransactionsCollection = "WriteHostBatcherTest.runWriteTest_" +
     new Random().nextInt(10000);
 
 
@@ -122,7 +122,7 @@ public class WriteHostBatcherTest {
   }
   @Test
   public void testWrites() throws Exception {
-    String collection = "ImportHostBatcherTest.testWrites";
+    String collection = "WriteHostBatcherTest.testWrites";
     moveMgr.setClient(client);
 
     assertEquals( "Since the doc doesn't exist, docMgr.exists() should return null",
@@ -181,17 +181,41 @@ public class WriteHostBatcherTest {
   }
 
   @Test
-  public void testMultiThreadWithTransactions() throws Exception {
-    testMultiThreadWithTransactions(0, 0, 1, 0, 10, "zeros");
-    testMultiThreadWithTransactions(  1, 1, 1, 1, 10, "ones");
-    testMultiThreadWithTransactions(1, 1, 3, 1, 10, "threads");
-    //testMultiThreadWithTransactions(1, 2, 3, 3, 30, "transactionsThreads");
-    testMultiThreadWithTransactions(2, 2, 3, 3, 30, "batchesTransactionsThreads");
-    testMultiThreadWithTransactions(2, 1, 20, 20, 200, "batchesThreads");
-    //testMultiThreadWithTransactions(2, 4, 20, 20, 200, "everything");
+  public void testZeros() throws Exception {
+    runWriteTest(0, 0, 1, 0, 10, "zeros");
   }
 
-  public void testMultiThreadWithTransactions( int batchSize, int transactionSize,
+  @Test
+  public void testOnes() throws Exception {
+    runWriteTest(1, 1, 1, 1, 10, "ones");
+  }
+
+  @Test
+  public void testExternalThreads() throws Exception {
+    runWriteTest(1, 1, 3, 1, 10, "threads");
+  }
+
+  @Test
+  public void testTransactionsAndThreads() throws Exception {
+    runWriteTest(1, 2, 3, 3, 30, "transactionsThreads");
+  }
+
+  @Test
+  public void testBatchesTransactionsThreads() throws Exception {
+    runWriteTest(2, 2, 3, 3, 30, "batchesTransactionsThreads");
+  }
+
+  @Test
+  public void testBatchesThreads() throws Exception {
+    runWriteTest(2, 1, 20, 20, 200, "batchesThreads");
+  }
+
+  @Test
+  public void testEverything() throws Exception {
+    runWriteTest(2, 4, 20, 20, 200, "everything");
+  }
+
+  public void runWriteTest( int batchSize, int transactionSize,
     int externalThreadCount, int batcherThreadCount, int totalDocCount, String testName)
   {
     String config = "{ batchSize:           " + batchSize + ",\n" + 
