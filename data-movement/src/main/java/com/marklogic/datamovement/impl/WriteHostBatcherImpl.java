@@ -283,6 +283,7 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] transactionInfo 
     batchWriteSet.onSuccess( () -> {
         // if we're not using transactions then timeToCommit is always true
         boolean timeToCommit = true;
+        boolean committed = false;
         if ( usingTransactions ) {
           TransactionInfo transactionInfo = batchWriteSet.getTransactionInfo();
           long batchNumFinished = transactionInfo.batchesFinished.incrementAndGet();
@@ -301,6 +302,7 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onSuccess] transactionInfo.inPr
                 // we're about to commit so let's restart transactionCounter
                 host.transactionCounter.set(0);
                 transactionInfo.transaction.commit();
+                committed = true;
                 for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
                   Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
                   for ( BatchListener<WriteEvent> successListener : successListeners ) {
@@ -322,8 +324,10 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onSuccess] transactionInfo.inPr
             transactionInfo.batches.add(batchWriteSet);
           }
           transactionInfo.inProcess.decrementAndGet();
+        } else {
+          committed = true;
         }
-        if ( timeToCommit ) {
+        if ( committed ) {
           Batch<WriteEvent> batch = batchWriteSet.getBatchOfWriteEvents();
           for ( BatchListener<WriteEvent> successListener : successListeners ) {
             successListener.processEvent(hostClient, batch);
@@ -337,7 +341,7 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] throwable=[" + throw
 System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] usingTransactions =[" + usingTransactions  + "]");
       if ( usingTransactions ) {
         TransactionInfo transactionInfo = batchWriteSet.getTransactionInfo();
-        transactionInfo.hadFailure.set(true);
+        transactionInfo.throwable.set(throwable);
         System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo =[" + transactionInfo  + "]");
         // if we're the only thread currently processing this transaction
 System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo.inProcess.get()=[" + transactionInfo.inProcess.get() + "]");
@@ -437,23 +441,29 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.written.get()=
       if ( transactionInfo.alive.get() == true ) {
         if ( transactionInfo.inProcess.get() <= 0 ) {
           if ( transactionInfo.written.get() == true ) {
-            if ( transactionInfo.hadFailure.get() == true ) {
+            if ( transactionInfo.throwable.get() != null ) {
               transactionInfo.transaction.rollback();
+              for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
+                Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
+                for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
+                  failureListener.processEvent(client, batch, transactionInfo.throwable.get());
+                }
+              }
             } else {
               transactionInfo.transaction.commit();
-            }
-            completed = true;
-            for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
-              Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
-              for ( BatchListener<WriteEvent> successListener : successListeners ) {
-                successListener.processEvent(client, batch);
+              for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
+                Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
+                for ( BatchListener<WriteEvent> successListener : successListeners ) {
+                  successListener.processEvent(client, batch);
+                }
               }
             }
+            completed = true;
           }
         }
       }
     } catch (Throwable t) {
-      transactionInfo.hadFailure.set(true);
+      transactionInfo.throwable.set(t);
       for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
         Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
         for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
@@ -599,7 +609,7 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.getTransactionInfo] permits =["
     private Transaction transaction;
     public AtomicBoolean alive = new AtomicBoolean(false);
     public AtomicBoolean written = new AtomicBoolean(false);
-    public AtomicBoolean hadFailure = new AtomicBoolean(false);
+    public AtomicReference<Throwable> throwable = new AtomicReference<>();
     public AtomicLong inProcess = new AtomicLong(0);
     public AtomicLong batchesFinished = new AtomicLong(0);
     public AtomicBoolean queuedForCleanup = new AtomicBoolean(false);
@@ -798,15 +808,25 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] (int) (((OrderedRunnable) o1).
       }
       CountDownLatch latch = new CountDownLatch(snapshotOfFutures.size());
       for ( Future<?> future : snapshotOfFutures ) {
-        new Thread(() -> {
-          try {
-            future.get(timeout, unit);
-            latch.countDown();
-          } catch (TimeoutException e) {
-          } catch (Exception e) {
-            latch.countDown();
+        Runnable waitForFutureToFinish = new Runnable() {
+          public void run() {
+            try {
+              future.get(timeout, unit);
+              latch.countDown();
+            } catch (TimeoutException e) {
+            } catch (Exception e) {
+              latch.countDown();
+            }
           }
-        }).start();
+        };
+        if ( timeout == Long.MAX_VALUE ) {
+          // we don't really want to timeout, we're willing to wait forever
+          waitForFutureToFinish.run();
+        } else {
+          // assuming we really want to timeout, launch separate threads
+          // so all can timeout at the same time
+          new Thread( waitForFutureToFinish ).start();
+        }
       }
       return latch.await(timeout, unit);
     }
