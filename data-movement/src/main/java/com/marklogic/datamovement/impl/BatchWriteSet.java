@@ -15,18 +15,26 @@
  */
 package com.marklogic.datamovement.impl;
 
-import com.marklogic.client.Transaction;
-import com.marklogic.client.document.DocumentManager;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
+
+import com.marklogic.client.DatabaseClient;
 import com.marklogic.client.document.DocumentWriteSet;
+import com.marklogic.client.document.ServerTransform;
 import com.marklogic.datamovement.Batch;
 import com.marklogic.datamovement.Forest;
 import com.marklogic.datamovement.WriteEvent;
+import com.marklogic.datamovement.impl.WriteHostBatcherImpl.TransactionInfo;
 
 public class BatchWriteSet {
   private DocumentWriteSet writeSet;
-  private Transaction transaction;
-  private int batchNumberInTransaction;
-  private Forest forest;
+  private DatabaseClient client;
+  private TransactionInfo transactionInfo;
+  private ServerTransform transform;
+  private String temporalCollection;
+  private Runnable onSuccess;
+  private Consumer<Throwable> onFailure;
+  private Runnable onBeforeWrite;
 
   public static class WriteEventImpl 
     extends DataMovementEventImpl<WriteEventImpl>
@@ -44,13 +52,13 @@ public class BatchWriteSet {
     }
   }
 
-  public BatchWriteSet(int batchNumberInTransaction, DocumentWriteSet writeSet,
-    Transaction transaction, Forest forest)
+  public BatchWriteSet(DocumentWriteSet writeSet, DatabaseClient client,
+    ServerTransform transform, String temporalCollection)
   {
-    this.batchNumberInTransaction = batchNumberInTransaction;
     this.writeSet = writeSet;
-    this.transaction = transaction;
-    this.forest = forest;
+    this.client = client;
+    this.transform = transform;
+    this.temporalCollection = temporalCollection;
   }
 
   public DocumentWriteSet getWriteSet() {
@@ -61,28 +69,60 @@ public class BatchWriteSet {
     this.writeSet = writeSet;
   }
 
-  public Transaction getTransaction() {
-    return transaction;
+  public DatabaseClient getClient() {
+    return client;
   }
 
-  public void setTransaction(Transaction transaction) {
-    this.transaction = transaction;
+  public void setClient(DatabaseClient client) {
+    this.client = client;
   }
 
-  public int getBatchNumberInTransaction() {
-    return batchNumberInTransaction;
+  public TransactionInfo getTransactionInfo() {
+    return transactionInfo;
   }
 
-  public void setBatchNumberInTransaction(int batchNumberInTransaction) {
-    this.batchNumberInTransaction = batchNumberInTransaction;
+  public void setTransactionInfo(TransactionInfo transactionInfo) {
+    this.transactionInfo = transactionInfo;
   }
 
-  public Forest getForest() {
-    return forest;
+  public ServerTransform getTransform() {
+    return transform;
   }
 
-  public void setForest(Forest forest) {
-    this.forest = forest;
+  public void setTransform(ServerTransform transform) {
+    this.transform = transform;
+  }
+
+  public String getTemporalCollection() {
+    return temporalCollection;
+  }
+
+  public void setTemporalCollection(String temporalCollection) {
+    this.temporalCollection = temporalCollection;
+  }
+
+  public Runnable getOnSuccess() {
+    return onSuccess;
+  }
+
+  public void onSuccess(Runnable onSuccess) {
+    this.onSuccess = onSuccess;
+  }
+
+  public Consumer<Throwable> getOnFailure() {
+    return onFailure;
+  }
+
+  public void onFailure(Consumer<Throwable>  onFailure) {
+    this.onFailure = onFailure;
+  }
+
+  public Runnable getOnBeforeWrite() {
+    return onBeforeWrite;
+  }
+
+  public void onBeforeWrite(Runnable onBeforeWrite) {
+    this.onBeforeWrite = onBeforeWrite;
   }
 
   public Batch<WriteEvent> getBatchOfWriteEvents() {

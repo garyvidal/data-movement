@@ -30,19 +30,22 @@ public class Common {
   final public static int    PORT     = 8012;
 
   public static DatabaseClient client;
-  public static void connect() {
+  public static DatabaseClient connect() {
     if (client != null) {
       client.release();
       client = null;
     }
     client = newClient();
+    return client;
   }
 
-  public static void connectAdmin() {
+  public static DatabaseClient connectAdmin() {
     client = newAdminClient();
+    return client;
   }
-  public static void connectEval() {
+  public static DatabaseClient connectEval() {
     client = newEvalClient();
+    return client;
   }
   public static DatabaseClient newClient() {
     return DatabaseClientFactory.newClient(

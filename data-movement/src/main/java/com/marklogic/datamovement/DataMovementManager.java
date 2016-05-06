@@ -79,7 +79,7 @@ public class DataMovementManager {
   }
 
   public WriteHostBatcher newWriteHostBatcher() {
-    verifyClientIsSet("newImportHostBatcher");
+    verifyClientIsSet("newWriteHostBatcher");
     WriteHostBatcherImpl batcher = new WriteHostBatcherImpl(getForestConfig());
     if ( client != null ) batcher.setClient(client);
     return batcher;
