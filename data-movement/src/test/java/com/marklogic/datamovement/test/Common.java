@@ -39,11 +39,13 @@ public class Common {
     return client;
   }
 
-  public static void connectAdmin() {
+  public static DatabaseClient connectAdmin() {
     client = newAdminClient();
+    return client;
   }
-  public static void connectEval() {
+  public static DatabaseClient connectEval() {
     client = newEvalClient();
+    return client;
   }
   public static DatabaseClient newClient() {
     return DatabaseClientFactory.newClient(
