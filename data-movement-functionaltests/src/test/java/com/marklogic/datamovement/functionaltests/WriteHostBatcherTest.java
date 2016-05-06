@@ -2138,8 +2138,8 @@ public class WriteHostBatcherTest extends  BasicJavaClientREST {
    	  }  
        		
   } 
-	
-	@Test
+	// EA 3 - We need a better way of getting to know that DB is disabled and how to assert on counts.
+	@Ignore
 	public void testDisableDBDuringInsert() throws Exception{
 		
 	    Thread t1 = new Thread(new DisabledDBRunnable());
