@@ -83,8 +83,8 @@ import com.marklogic.datamovement.WriteHostBatcher;
  *     - and calls rollback (if using transactions)
  *       - using a thread from threadPool
  *       - then calls each failureListener for each transaction batch
- *   - flush writes all batches whether full or not
- *     - and commits the transaction for each batch so nothing is left uncommitted
+ *   - flush() writes all queued documents whether the last batch is full or not
+ *     - and commits the transaction for each batch so nothing is left uncommitted (ignores transactionSize)
  *     - and resets counter so the next batch will be a normal batch size
  *     - and finishes any unfinished transactions
  *       - those without error are committed
@@ -292,7 +292,9 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.add] writeSet=[" + writeSet + "
           break;
         }
       }
-      threadPool.submit( new BatchWriter(writeSet) );
+      if ( writeSet.getWriteSet().size() > 0 ) {
+        threadPool.submit( new BatchWriter(writeSet) );
+      }
     }
     return this;
   }
