@@ -206,7 +206,6 @@ public class WriteHostBatcherImpl
       }
       if ( getBatchSize() <= 0 ) withBatchSize(1);
       if ( transactionSize > 1 ) usingTransactions = true;
-      System.out.println("DEBUG: [WriteHostBatcherImpl] usingTransactions =[" + usingTransactions  + "]");
       // call out to REST /v1/forestinfo so we can get a list of hosts to use
       Forest[] forests = forestConfig.listForests();
       if ( forests.length == 0 ) {
@@ -272,20 +271,15 @@ public class WriteHostBatcherImpl
   {
     initialize();
     requireNotStopped();
-System.out.println("DEBUG: [WriteHostBatcherImpl.add] uri=[" + uri + "]");
     queue.add( new DocumentToWrite(uri, metadataHandle, contentHandle) );
     // if we have queued batchSize, it's time to flush a batch
     long recordNum = batchCounter.incrementAndGet();
-System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThread().getName() + "] recordNum =[" + recordNum  + "]");
     boolean timeToWriteBatch = (recordNum % getBatchSize()) == 0;
     if ( timeToWriteBatch ) {
       BatchWriteSet writeSet = newBatchWriteSet(false);
       for (int i=0; i < getBatchSize(); i++ ) {
         DocumentToWrite doc = queue.poll();
-System.out.println("DEBUG: [WriteHostBatcherImpl.add] [queue.poll] doc=[" + doc + "]");
         if ( doc != null ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl.add] [queue.poll] doc.uri=[" + doc.uri + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.add] writeSet=[" + writeSet + "]");
           writeSet.getWriteSet().add(doc.uri, doc.metadataHandle, doc.contentHandle);
         } else {
           // strange, there should have been a full batch of docs in the queue...
@@ -324,20 +318,14 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.add] writeSet=[" + writeSet + "
     int hostToUse = (int) (batchNum % hostInfos.length);
     HostInfo host = hostInfos[hostToUse];
     DatabaseClient hostClient = host.client;
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] hostClient =[" + hostClient  + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] usingTransactions =[" + usingTransactions  + "]");
     BatchWriteSet batchWriteSet = new BatchWriteSet( hostClient.newDocumentManager().newWriteSet(),
       hostClient, getTransform(), getTemporalCollection());
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] batchWriteSet =[" + batchWriteSet  + "]");
     if ( usingTransactions ) {
       // before we write, see if we need to open a transaction
       batchWriteSet.onBeforeWrite( () -> {
         long transactionCount = host.transactionCounter.getAndIncrement();
-System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] transactionCount =[" + transactionCount  + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl] (transactionCount % getTransactionSize())=[" + (transactionCount % getTransactionSize()) + "]");
         // if this is the first batch in this transaction, it's time to initialize a transaction
         boolean timeForNewTransaction = (transactionCount % getTransactionSize()) == 0;
-System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] timeForNewTransaction =[" + timeForNewTransaction  + "]");
         if ( timeForNewTransaction ) {
           batchWriteSet.setTransactionInfo( transactionOpener(host, hostClient, transactionSize) );
         } else {
@@ -351,7 +339,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] timeForNewTransa
             batchWriteSet.setTransactionInfo( transactionOpener(host, hostClient, transactionSize) );
           }
         }
-System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] transactionInfo =[" + batchWriteSet.getTransactionInfo()  + "]");
       });
     }
     batchWriteSet.onSuccess( () -> {
@@ -361,17 +348,11 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onBeforeWrite] transactionInfo 
         if ( usingTransactions ) {
           TransactionInfo transactionInfo = batchWriteSet.getTransactionInfo();
           long batchNumFinished = transactionInfo.batchesFinished.incrementAndGet();
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] transactionInfo.transaction.getTransactionId()=[" + transactionInfo.transaction.getTransactionId() + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] batchNumFinished =[" + batchNumFinished  + "]");
           timeToCommit = (batchNumFinished == getTransactionSize());
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] timeToCommit =[" + timeToCommit  + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.newBatchWriteSet] forceNewTransaction =[" + forceNewTransaction  + "]");
           if ( forceNewTransaction || timeToCommit ) {
             // this is the last batch in the transaction
-System.out.println("DEBUG: [WriteHostBatcherImpl] batchWriteSet.getTransactionInfo().alive.get()=[" + batchWriteSet.getTransactionInfo().alive.get() + "]");
             if ( transactionInfo.alive.get() == true ) {
               // if we're the only thread currently processing this transaction
-System.out.println("DEBUG: [WriteHostBatcherImpl.onSuccess] transactionInfo.inProcess.get()=[" + transactionInfo.inProcess.get() + "]");
               if ( transactionInfo.inProcess.get() <= 1 ) {
                 // we're about to commit so let's restart transactionCounter
                 host.transactionCounter.set(0);
@@ -409,23 +390,18 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onSuccess] transactionInfo.inPr
         }
     });
     batchWriteSet.onFailure( (throwable) -> {
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] throwable=[" + throwable + "]");
       // reset the transactionCounter so the next write will start a new transaction
       host.transactionCounter.set(0);
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] usingTransactions =[" + usingTransactions  + "]");
       if ( usingTransactions ) {
         TransactionInfo transactionInfo = batchWriteSet.getTransactionInfo();
         transactionInfo.throwable.set(throwable);
-        System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo =[" + transactionInfo  + "]");
         // if we're the only thread currently processing this transaction
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo.inProcess.get()=[" + transactionInfo.inProcess.get() + "]");
         if ( transactionInfo.inProcess.get() <= 1 ) {
           try {
             transactionInfo.transaction.rollback();
           } catch(Throwable t2) {
             throwable.addSuppressed(t2);
           }
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo.batches=[" + transactionInfo.batches + "]");
           for ( BatchWriteSet transactionWriteSet : transactionInfo.batches ) {
             Batch<WriteEvent> batch = transactionWriteSet.getBatchOfWriteEvents();
             for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
@@ -435,13 +411,10 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] transactionInfo.batc
         } else {
           host.unfinishedTransactions.add(transactionInfo);
         }
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure.2] transactionInfo.batches=[" + transactionInfo.batches + "]");
         transactionInfo.inProcess.decrementAndGet();
       }
       Batch<WriteEvent> batch = batchWriteSet.getBatchOfWriteEvents();
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] batch =[" + batch  + "]");
       for ( BatchFailureListener<WriteEvent> failureListener : failureListeners ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] failureListener =[" + failureListener  + "]");
         failureListener.processEvent(hostClient, batch, throwable);
       }
     });
@@ -474,8 +447,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.onFailure] failureListener =[" 
       BatchWriteSet writeSet = newBatchWriteSet(forceNewTransaction);
       for ( int i=0; i < getBatchSize() && iter.hasNext(); i++ ) {
         DocumentToWrite doc = iter.next();
-System.out.println("DEBUG: [WriteHostBatcherImpl.flush] doc.uri=[" + doc.uri + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.flush] writeSet=[" + writeSet + "]");
         writeSet.getWriteSet().add(doc.uri, doc.metadataHandle, doc.contentHandle);
       }
       threadPool.submit( new BatchWriter(writeSet) );
@@ -490,17 +461,11 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.flush] writeSet=[" + writeSet +
 
       // now commit any current transactions
       for ( HostInfo host : hostInfos ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl] host.hostName=[" + host.hostName + "]");
         TransactionInfo transactionInfo;
         while ( (transactionInfo = host.getTransactionInfoAndDrainPermits()) != null ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl.flush] transactionInfo =[" + transactionInfo  + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl.flush] transactionInfo.transaction.getTransactionId()=[" + transactionInfo.transaction.getTransactionId() + "]");
           TransactionInfo transactionInfoCopy = transactionInfo;
-          if ( completeTransaction(host.client, transactionInfoCopy) ) {
-            System.out.println("DEBUG: [WriteHostBatcherImpl.flush] completed");
-          }
+          completeTransaction(host.client, transactionInfoCopy);
         }
-System.out.println("DEBUG: [WriteHostBatcherImpl.flush] transactionInfo.2 =[" + transactionInfo  + "]");
       }
     }
   }
@@ -508,10 +473,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.flush] transactionInfo.2 =[" + 
   public boolean completeTransaction(DatabaseClient client, TransactionInfo transactionInfo) {
     boolean completed = false;
     try {
-System.out.println("DEBUG: [WriteHostBatcherImpl.commitTransaction] evaluating " + transactionInfo.transaction.getTransactionId());
-System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.alive.get()=[" + transactionInfo.alive.get() + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.inProcess.get()=[" + transactionInfo.inProcess.get() + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.written.get()=[" + transactionInfo.written.get() + "]");
       if ( transactionInfo.alive.get() == true ) {
         if ( transactionInfo.inProcess.get() <= 0 ) {
           if ( transactionInfo.written.get() == true ) {
@@ -645,10 +606,8 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.written.get()=
         // get one off the queue if available, if not then block until one is avialable
         TransactionInfo transactionInfo = transactionInfos.poll();
         if ( transactionInfo == null ) return null;
-System.out.println("DEBUG: [WriteHostBatcherImpl.getTransactionInfo] transactionInfo =[" + transactionInfo  + "]");
         // remove one permit
         int permits = transactionInfo.transactionPermits.decrementAndGet();
-System.out.println("DEBUG: [WriteHostBatcherImpl.getTransactionInfo] permits =[" + permits  + "]");
         // if there are permits left, push this back onto the queue
         if ( permits >= 0 ) {
           if ( permits > 0 ) {
@@ -703,24 +662,18 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.getTransactionInfo] permits =["
         } else if ( transactionInfo.queuedForCleanup.get() == true ) {
           // skip this one, it's already queued
         } else {
-System.out.println("DEBUG: [WriteHostBatcherImpl.cleanupUnfinishedTransactions] evaluating " + transactionInfo.transaction.getTransactionId());
-System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.inProcess.get()=[" + transactionInfo.inProcess.get() + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl] transactionInfo.written.get()=[" + transactionInfo.written.get() + "]");
           if ( transactionInfo.inProcess.get() <= 0 ) {
             if ( transactionInfo.written.get() == true ) {
               transactionInfo.queuedForCleanup.set(true);
               threadPool.submit( () -> {
                 if ( completeTransaction(host.client, transactionInfo) ) {
-System.out.println("DEBUG: [WriteHostBatcherImpl.cleanupUnfinishedTransactions] completed" + transactionInfo.transaction.getTransactionId());
                   host.unfinishedTransactions.remove(transactionInfo);
-System.out.println("DEBUG: [WriteHostBatcherImpl.cleanupUnfinishedTransactions] removed " + transactionInfo.transaction.getTransactionId());
                 } else {
                   // let's try again next cleanup
                   transactionInfo.queuedForCleanup.set(false);
                 }
               });
             } else {
-System.out.println("DEBUG: [WriteHostBatcherImpl.cleanupUnfinishedTransactions] not written, removing " + transactionInfo.transaction.getTransactionId());
               iterator.remove();
             }
           }
@@ -761,7 +714,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.cleanupUnfinishedTransactions] 
     transactionInfo.inProcess.incrementAndGet();
     host.addTransactionInfo(transactionInfo);
     cleanupUnfinishedTransactions();
-System.out.println("DEBUG: [WriteHostBatcherImpl.run] transactionSize=[" + transactionSize + "]");
     return transactionInfo;
   }
 
@@ -778,8 +730,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl.run] transactionSize=[" + trans
 
     public void run() {
       try {
-System.out.println("DEBUG: [WriteHostBatcherImpl.run] [Thread:" + Thread.currentThread().getName() + "] writeSet=[" + writeSet + "]");
-System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThread().getName() + "] writeSet.getWriteSet().size()=[" + writeSet.getWriteSet().size() + "]");
         Runnable onBeforeWrite = writeSet.getOnBeforeWrite();
         if ( onBeforeWrite != null ) {
           onBeforeWrite.run();
@@ -803,7 +753,6 @@ System.out.println("DEBUG: [WriteHostBatcherImpl] [Thread:" + Thread.currentThre
           throw new DataMovementException("Failed to write because transaction already underwent commit or rollback", null);
         }
       } catch (Throwable t) {
-System.out.println("DEBUG: [WriteHostBatcherImpl] t=[" + t + "]");
         Consumer<Throwable> onFailure = writeSet.getOnFailure();
         if ( onFailure != null ) {
           onFailure.accept(t);
