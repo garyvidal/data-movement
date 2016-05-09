@@ -5,7 +5,7 @@ import javax.tools.ToolProvider
 
 
 group = 'com.marklogic'
-version = '1.0-SNAPSHOT'
+version = '1.0.0-EA2'
 
 compileJava.options.encoding = 'UTF-8'
 
@@ -21,7 +21,7 @@ repositories {
      maven { url "http://repo.maven.apache.org/maven2" }
 }
 dependencies {
-    compile group: 'com.marklogic', name: 'java-client-api', version:'4.0-SNAPSHOT'
+    compile group: 'com.marklogic', name: 'java-client-api', version:'4.0.0-EA2'
     compile group: 'com.marklogic', name: 'mlcp', version:'8.0-4'
     compile group: 'com.sun.jersey', name: 'jersey-core', version:'1.17'
     compile group: 'com.fasterxml.jackson.core', name: 'jackson-core', version:'2.5.4'
